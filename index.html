@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en" class="dark"> <!-- Always dark mode -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; /* slate-900 */
+        }
+        
+        /* Wrapper for the final visible canvas (QR + Label) */
+        #final-canvas-wrapper {
+            max-width: 288px; /* 256px + 16px padding */
+            margin: 0 auto;
+        }
+        #final-canvas-wrapper canvas {
+            width: 100% !important;
+            height: auto !important;
+            border-radius: 0.5rem;
+        }
+
+        /* Hidden div used by the library to generate the base QR */
+        #qrcode {
+            display: none;
+        }
+
+        .tab-active {
+            background-color: #4f46e5 !important; /* indigo-600 */
+            color: white !important;
+        }
+        .tab-btn:not(.tab-active) { 
+            color: #cbd5e1; /* slate-300 */ 
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-lg mx-auto">
+        <div class="bg-slate-800 rounded-2xl shadow-2xl shadow-black/40 p-6 md:p-8 relative">
+            
+            <div class="text-center mb-6">
+                <h1 class="text-2xl md:text-3xl font-bold text-white">QR Code Generator</h1>
+                <p class="text-slate-400 mt-2">Create QR codes instantly.</p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="grid grid-cols-5 gap-2 mb-6 bg-slate-700 p-1 rounded-lg">
+                <button id="urlTab" class="tab-btn tab-active px-3 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
+                    <span class="hidden sm:inline">URL</span>
+                </button>
+                <button id="textTab" class="tab-btn px-3 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
+                    <span class="hidden sm:inline">Text</span>
+                </button>
+                <button id="wifiTab" class="tab-btn px-3 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v.008l.004.004A11.23 11.23 0 0118 10.5a.75.75 0 01-1.5 0 9.73 9.73 0 00-6.5-3.03V3.75A.75.75 0 0110 3zm0 4a.75.75 0 01.75.75v.008l.004.004A7.23 7.23 0 0115 11.25a.75.75 0 01-1.5 0A5.73 5.73 0 0010.75 8.3v-.55A.75.75 0 0110 7zm0 4a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" clip-rule="evenodd" /><path d="M4.22 8.72a.75.75 0 00-1.06 1.06l.002.002a11.23 11.23 0 0113.676 0l.002-.002a.75.75 0 10-1.06-1.06 9.73 9.73 0 00-11.556 0z" /></svg>
+                    <span class="hidden sm:inline">WiFi</span>
+                </button>
+                <button id="contactTab" class="tab-btn px-3 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>
+                    <span class="hidden sm:inline">Contact</span>
+                </button>
+                <button id="emailTab" class="tab-btn px-3 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg>
+                    <span class="hidden sm:inline">Email</span>
+                </button>
+            </div>
+
+            <div id="error-message" class="hidden text-red-400 text-sm text-center mb-4 p-3 bg-red-900/30 rounded-lg"></div>
+
+            <!-- Input Sections -->
+            <form id="qrForm" class="space-y-4">
+                <div id="urlSection">
+                    <input type="url" id="urlInput" placeholder="https://example.com" class="form-input">
+                </div>
+                <div id="textSection" class="hidden">
+                    <textarea id="textInput" placeholder="Enter any text..." rows="4" class="form-input"></textarea>
+                </div>
+                <div id="wifiSection" class="hidden space-y-4">
+                    <input type="text" id="ssidInput" placeholder="Network Name (SSID)" class="form-input">
+                    <input type="password" id="passwordInput" placeholder="Password" class="form-input">
+                    <div class="grid grid-cols-2 gap-4">
+                        <select id="encryptionSelect" class="form-input">
+                            <option value="WPA">WPA/WPA2</option>
+                            <option value="WEP">WEP</option>
+                            <option value="nopass">None</option>
+                        </select>
+                        <div class="flex items-center justify-center bg-slate-700 rounded-lg px-4 border-2 border-transparent">
+                            <input id="hiddenCheckbox" type="checkbox" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-600 bg-slate-800">
+                            <label for="hiddenCheckbox" class="ml-3 block text-sm font-medium text-slate-300">Hidden</label>
+                        </div>
+                    </div>
+                </div>
+                <div id="contactSection" class="hidden space-y-4">
+                    <input type="text" id="nameInput" placeholder="Full Name (e.g., John Doe)" class="form-input">
+                    <input type="tel" id="phoneInput" placeholder="Phone Number (e.g., +11234567890)" class="form-input">
+                </div>
+                <div id="emailSection" class="hidden space-y-4">
+                    <input type="email" id="emailToInput" placeholder="To: email@example.com" class="form-input">
+                    <input type="text" id="emailSubjectInput" placeholder="Subject" class="form-input">
+                    <textarea id="emailBodyInput" placeholder="Email body..." rows="3" class="form-input"></textarea>
+                </div>
+            
+                <!-- Label Toggle -->
+                <div class="flex items-center justify-between pt-2">
+                    <label for="showLabelToggle" class="text-sm font-medium text-slate-300">Add text label (at bottom)</label>
+                    <button type="button" id="showLabelToggle" role="switch" aria-checked="false" class="bg-slate-600 relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-800">
+                        <span class="sr-only">Add label</span>
+                        <span aria-hidden="true" id="showLabelToggleKnob" class="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                    </button>
+                </div>
+
+                <!-- NEW Custom Label Input -->
+                <div id="customLabelSection" class="hidden pt-4">
+                    <label for="customLabelInput" class="sr-only">Custom Label</label>
+                    <input type="text" id="customLabelInput" placeholder="Enter custom label" class="form-input">
+                </div>
+
+                <!-- Generate Button Removed - Now Real-time -->
+            </form>
+            
+            <!-- QR Code Preview -->
+            <div id="qr-container" class="mt-8 text-center opacity-0 scale-95 pointer-events-none transition-all duration-300 ease-in-out">
+                <div id="final-canvas-wrapper" class="bg-slate-700 p-4 rounded-lg inline-block shadow-inner">
+                    <!-- The final canvas (QR + Label) will be inserted here -->
+                </div>
+                <p id="qr-filename" class="text-sm text-slate-400 mt-2 truncate"></p>
+                <!-- Hidden div for library to generate base QR -->
+                <div id="qrcode"></div>
+            </div>
+            
+            <div id="action-buttons" class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 opacity-0 scale-95 pointer-events-none transition-all duration-300 ease-in-out">
+                 <button id="downloadBtn" class="action-btn">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                     <span>Download</span>
+                 </button>
+                 <button id="copyBtn" class="action-btn">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" /><path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h6a2 2 0 00-2-2H5z" /></svg>
+                     <span id="copyBtnText">Copy Image</span>
+                 </button>
+                 <button id="shareBtn" class="action-btn sm:col-span-2 md:col-span-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                    </svg>
+                    <span>Share</span>
+                 </button>
+            </div>
+        </div>
+        
+        <footer class="mt-6 text-center text-sm text-slate-400">
+             Designed by OPH All rights reserved to the OP team.
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Utility Function ---
+            const debounce = (func, delay) => {
+                let timeoutId;
+                return (...args) => {
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => {
+                        func.apply(this, args);
+                    }, delay);
+                };
+            };
+
+            // --- Element Selection ---
+            const qrForm = document.getElementById('qrForm');
+            const qrcodeDiv = document.getElementById('qrcode'); // Hidden div for base generation
+            const finalCanvasWrapper = document.getElementById('final-canvas-wrapper'); // Visible wrapper
+            const qrContainer = document.getElementById('qr-container');
+            const actionButtons = document.getElementById('action-buttons');
+            const qrFilename = document.getElementById('qr-filename');
+            const errorMessage = document.getElementById('error-message');
+
+            // Tabs
+            const tabs = {
+                url: document.getElementById('urlTab'),
+                text: document.getElementById('textTab'),
+                wifi: document.getElementById('wifiTab'),
+                contact: document.getElementById('contactTab'),
+                email: document.getElementById('emailTab'),
+            };
+            const sections = {
+                url: document.getElementById('urlSection'),
+                text: document.getElementById('textSection'),
+                wifi: document.getElementById('wifiSection'),
+                contact: document.getElementById('contactSection'),
+                email: document.getElementById('emailSection'),
+            };
+            const allInputs = document.querySelectorAll('.form-input, input[type=checkbox]');
+
+            // Form Inputs
+            const inputs = {
+                url: document.getElementById('urlInput'),
+                text: document.getElementById('textInput'),
+                ssid: document.getElementById('ssidInput'),
+                password: document.getElementById('passwordInput'),
+                encryption: document.getElementById('encryptionSelect'),
+                hidden: document.getElementById('hiddenCheckbox'),
+                name: document.getElementById('nameInput'),
+                phone: document.getElementById('phoneInput'),
+                emailTo: document.getElementById('emailToInput'),
+                emailSubject: document.getElementById('emailSubjectInput'),
+                emailBody: document.getElementById('emailBodyInput'),
+            };
+
+            // Customization Inputs
+            const customLabelSection = document.getElementById('customLabelSection'); // NEW
+            const customLabelInput = document.getElementById('customLabelInput'); // NEW
+
+            // Action Buttons
+            const downloadBtn = document.getElementById('downloadBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const copyBtnText = document.getElementById('copyBtnText');
+            const shareBtn = document.getElementById('shareBtn');
+            
+            // --- App State ---
+            let qrcode = null;
+            let currentMode = 'url';
+            let showLabel = false;
+            let currentFinalCanvas = null; // Store the final canvas for download/copy
+
+            // --- Core App Logic ---
+
+            const showQr = () => {
+                qrContainer.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+                actionButtons.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+            };
+            const hideQr = () => {
+                qrContainer.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+                actionButtons.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+            };
+
+            const clearQRCode = () => {
+                qrcodeDiv.innerHTML = '';
+                finalCanvasWrapper.innerHTML = ''; // Clear the visible canvas
+                // No longer hiding here, hideQr() will be called if needed
+                qrcode = null;
+                currentFinalCanvas = null;
+            };
+
+            const clearError = () => {
+                errorMessage.classList.add('hidden');
+                errorMessage.textContent = '';
+            };
+
+            const showError = (message) => {
+                errorMessage.textContent = message;
+                errorMessage.classList.remove('hidden');
+                hideQr(); // Hide QR on error
+            };
+
+            const switchMode = (mode) => {
+                currentMode = mode;
+                clearError();
+                
+                Object.values(tabs).forEach(tab => tab.classList.remove('tab-active'));
+                Object.values(sections).forEach(section => section.classList.add('hidden'));
+
+                tabs[mode].classList.add('tab-active');
+                sections[mode].classList.remove('hidden');
+                
+                // Regenerate or clear
+                debouncedGenerate();
+            };
+
+            Object.keys(tabs).forEach(mode => {
+                tabs[mode].addEventListener('click', () => switchMode(mode));
+            });
+
+            // --- NEW Function: Get Default Label ---
+            const getDefaultLabel = () => {
+                let label = '';
+                try {
+                    switch (currentMode) {
+                        case 'url':
+                            const url = inputs.url.value.trim();
+                            if (url) {
+                                try { label = new URL(url).hostname.replace(/^www\./, ''); } 
+                                catch (_) { label = url.replace(/^https?:\/\//, '').replace(/^www\./, ''); }
+                            }
+                            break;
+                        case 'text':
+                            const text = inputs.text.value;
+                            if (text) label = 'Text';
+                            break;
+                        case 'wifi':
+                            const ssid = inputs.ssid.value.trim();
+                            if (ssid) label = ssid;
+                            break;
+                        case 'contact':
+                            const fullName = inputs.name.value.trim();
+                            if (fullName) label = fullName;
+                            break;
+                        case 'email':
+                            const to = inputs.emailTo.value.trim();
+                            if (to) label = `Email ${to}`;
+                            break;
+                    }
+                } catch (e) {
+                    console.error("Error getting default label:", e);
+                }
+                // Truncate default label
+                if (label.length > 30) label = label.substring(0, 27) + '...';
+                return label;
+            };
+            
+            // --- Main Generation Function ---
+            const generateQRCode = () => {
+                clearError();
+                let textToEncode = '';
+                let label = ''; // This will be set from custom input
+                let filename = 'qrcode.png';
+                let hasRequiredData = false;
+                let defaultLabelForFile = ''; // We still need the default label for the filename
+                
+                try {
+                    // 1. Get Data String based on mode
+                    switch (currentMode) {
+                        case 'url':
+                            const url = inputs.url.value.trim();
+                            if (url) {
+                                textToEncode = url;
+                                try { defaultLabelForFile = new URL(url).hostname.replace(/^www\./, ''); } 
+                                catch (_) { defaultLabelForFile = url.replace(/^https?:\/\//, '').replace(/^www\./, ''); }
+                                filename = `${defaultLabelForFile.replace(/[^a-z0-9]/gi, '_')}.png`;
+                                hasRequiredData = true;
+                            }
+                            break;
+                        case 'text':
+                            const text = inputs.text.value;
+                            if (text) {
+                                textToEncode = text;
+                                defaultLabelForFile = 'Text';
+                                filename = 'text_qr.png';
+                                hasRequiredData = true;
+                            }
+                            break;
+                        case 'wifi':
+                            const ssid = inputs.ssid.value.trim();
+                            if (ssid) {
+                                textToEncode = `WIFI:T:${inputs.encryption.value};S:${escapeWifiString(ssid)};P:${escapeWifiString(inputs.password.value)};H:${inputs.hidden.checked};;`;
+                                defaultLabelForFile = ssid;
+                                filename = `wifi_${ssid.replace(/\s/g, '_')}.png`;
+                                hasRequiredData = true;
+                            }
+                            break;
+                        case 'contact':
+                            const fullName = inputs.name.value.trim();
+                            const phone = inputs.phone.value.trim();
+                            if (fullName && phone) {
+                                const nameParts = fullName.split(' ');
+                                const lastName = nameParts.pop() || '';
+                                const firstName = nameParts.join(' ');
+                                textToEncode = `BEGIN:VCARD\nVERSION:3.0\nN:${lastName};${firstName};;;\nFN:${fullName}\nTEL;TYPE=CELL,VOICE:${phone}\nEND:VCARD`;
+                                defaultLabelForFile = fullName;
+                                filename = `contact_${fullName.replace(/\s/g, '_')}.png`;
+                                hasRequiredData = true;
+                            }
+                            break;
+                        case 'email':
+                            const to = inputs.emailTo.value.trim();
+                            if (to) {
+                                const subject = encodeURIComponent(inputs.emailSubject.value.trim());
+                                const body = encodeURIComponent(inputs.emailBody.value);
+                                textToEncode = `mailto:${to}?subject=${subject}&body=${body}`;
+                                defaultLabelForFile = `Email ${to}`;
+                                filename = `email_${to.replace(/[^a-z0-9]/gi, '_')}.png`;
+                                hasRequiredData = true;
+                            }
+                            break;
+                    }
+
+                    if (!hasRequiredData) {
+                        clearQRCode();
+                        hideQr(); // Fade out if no data
+                        return; // Not an error, just no data
+                    }
+
+                    // *** FIX: START FADE-OUT ***
+                    // Start fading out the old QR code while we generate the new one
+                    hideQr();
+
+                    // 2. Clear old QR and create new one
+                    qrcodeDiv.innerHTML = ''; // Clear the hidden generator div
+                    // finalCanvasWrapper.innerHTML = ''; // This is now done inside drawFinalCanvas
+                    qrFilename.textContent = filename;
+                    
+                    qrcode = new QRCode(qrcodeDiv, {
+                        text: textToEncode,
+                        width: 256, height: 256,
+                        colorDark: '#0f172a', // Always dark on light for scannability
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+
+                    // 3. Apply Label (if needed)
+                    // *** MODIFIED: Get label from custom input if toggled ***
+                    if (showLabel) {
+                        label = customLabelInput.value.trim();
+                        // Truncate custom label if needed
+                        if (label.length > 30) label = label.substring(0, 27) + '...';
+                    } else {
+                        label = ''; // Ensure label is empty if toggle is off
+                    }
+                    
+                    // Wait for QR to render AND fade-out to play
+                    setTimeout(() => {
+                        drawFinalCanvas(label);
+                        showQr(); // Fade in the new QR
+                    }, 150); // Increased to 150ms for a smoother cross-fade
+
+                } catch (error) {
+                    console.error('QR Generation Error:', error);
+                    showError('Failed to generate QR. Data may be too large or invalid.');
+                }
+            };
+            const debouncedGenerate = debounce(generateQRCode, 300);
+
+            // --- Overlay/Label Drawing Function ---
+            const drawFinalCanvas = (label) => {
+                const qrCanvas = qrcodeDiv.querySelector('canvas');
+                const qrImg = qrcodeDiv.querySelector('img');
+                let baseImageElement = qrCanvas || qrImg;
+                if (!baseImageElement) return;
+
+                const baseSize = 256;
+                const labelHeight = showLabel && label ? 30 : 0;
+                const finalCanvas = document.createElement('canvas');
+                finalCanvas.width = baseSize;
+                finalCanvas.height = baseSize + labelHeight;
+                const ctx = finalCanvas.getContext('2d');
+                
+                // 1. Draw background (for label area)
+                ctx.fillStyle = '#ffffff'; // Always white background
+                ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+                // 2. Draw the base QR code
+                ctx.drawImage(baseImageElement, 0, 0, baseSize, baseSize);
+
+                // 3. Draw Label (if toggled)
+                if (labelHeight > 0) {
+                    const fontSize = 14;
+                    ctx.font = `600 ${fontSize}px 'Inter'`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#0f172a'; // Always dark text
+                    
+                    const labelY = baseSize + (labelHeight / 2);
+                    ctx.fillText(label, baseSize / 2, labelY);
+                }
+
+                // Replace the original QR with the new labeled canvas
+                // This is now safe, as the container is opacity-0
+                finalCanvasWrapper.innerHTML = '';
+                finalCanvasWrapper.appendChild(finalCanvas);
+                currentFinalCanvas = finalCanvas; // Save for download/copy/share
+            };
+
+            // --- Event Listeners ---
+            
+            // 1. Real-time Generation Triggers
+            allInputs.forEach(input => input.addEventListener('input', debouncedGenerate));
+            customLabelInput.addEventListener('input', debouncedGenerate); // NEW: Listen to custom label input
+
+            // 2. Label Toggle
+            showLabelToggle.addEventListener('click', () => {
+                showLabel = !showLabel;
+                showLabelToggle.setAttribute('aria-checked', showLabel);
+                if (showLabel) {
+                    showLabelToggle.classList.remove('bg-slate-600');
+                    showLabelToggle.classList.add('bg-indigo-600');
+                    showLabelToggleKnob.classList.remove('translate-x-0'); // FIX
+                    showLabelToggleKnob.classList.add('translate-x-5');
+                    
+                    // NEW: Show custom input and populate with default
+                    customLabelInput.value = getDefaultLabel();
+                    customLabelSection.classList.remove('hidden');
+
+                } else {
+                    showLabelToggle.classList.add('bg-slate-600');
+                    showLabelToggle.classList.remove('bg-indigo-600');
+                    showLabelToggleKnob.classList.remove('translate-x-5'); // FIX
+                    showLabelToggleKnob.classList.add('translate-x-0');
+
+                    // NEW: Hide custom input
+                    customLabelSection.classList.add('hidden');
+                }
+                debouncedGenerate(); // Re-render with/without label
+            });
+            
+            // 3. Smart Form Logic
+            inputs.encryption.addEventListener('change', () => {
+                const isNone = inputs.encryption.value === 'nopass';
+                inputs.password.disabled = isNone;
+                if (isNone) inputs.password.value = '';
+                debouncedGenerate(); // Update QR
+            });
+
+            inputs.url.addEventListener('blur', () => {
+                let url = inputs.url.value.trim();
+                // Only add if it's not a mailto: tel: etc.
+                if (url && !url.match(/^[a-zA-Z]+:/) && url.includes('.')) {
+                    inputs.url.value = 'https://' + url;
+                    debouncedGenerate();
+                }
+            });
+
+            // 4. Action Buttons (Download/Copy/Share)
+            downloadBtn.addEventListener('click', () => {
+                if (currentFinalCanvas) {
+                    const link = document.createElement('a');
+                    link.href = currentFinalCanvas.toDataURL('image/png');
+                    link.download = qrFilename.textContent || 'qrcode.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    showError("Could not find QR code to download.");
+                }
+            });
+
+            copyBtn.addEventListener('click', () => {
+                if (!currentFinalCanvas) return showError("Could not find QR code to copy.");
+                
+                currentFinalCanvas.toBlob((blob) => {
+                    if (navigator.clipboard?.write) {
+                        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+                            .then(() => {
+                                copyBtnText.textContent = 'Copied!';
+                                setTimeout(() => { copyBtnText.textContent = 'Copy Image'; }, 2000);
+                            }).catch(err => {
+                                console.error('Failed to copy image:', err);
+                                showError('Failed to copy image.');
+                            });
+                    } else {
+                        // Fallback for environments where clipboard.write is not supported
+                        try {
+                            const data = [new ClipboardItem({ 'image/png': blob })];
+                            navigator.clipboard.write(data);
+                            copyBtnText.textContent = 'Copied!';
+                            setTimeout(() => { copyBtnText.textContent = 'Copy Image'; }, 2000);
+                        } catch (err_fallback) {
+                             console.error('Failed to copy image (fallback):', err_fallback);
+                            showError('Clipboard API not supported.');
+                        }
+                    }
+                }, 'image/png');
+            });
+
+            shareBtn.addEventListener('click', () => {
+                if (!currentFinalCanvas) return showError("Could not find QR code to share.");
+
+                currentFinalCanvas.toBlob(async (blob) => {
+                    const file = new File([blob], qrFilename.textContent || 'qrcode.png', { type: 'image/png' });
+                    const shareData = {
+                        title: 'QR Code',
+                        text: qrFilename.textContent,
+                        files: [file],
+                    };
+                    
+                    if (navigator.canShare && navigator.canShare(shareData)) {
+                        try {
+                            await navigator.share(shareData);
+                        } catch (err) {
+                            if (err.name !== 'AbortError') {
+                                console.error('Share failed:', err);
+                                showError('Share failed.');
+                            }
+                        }
+                    } else {
+                        showError('Sharing not supported by your browser.');
+                    }
+                }, 'image/png');
+            });
+
+            // 5. Utility
+            const escapeWifiString = (str) => str.replace(/([\\;,:"])/g, "\\$1");
+            
+            // --- Initial Setup ---
+            // Add shared styles to all form inputs
+            document.querySelectorAll('input[type="text"], input[type="url"], input[type="tel"], input[type="password"], input[type="email"], textarea, select')
+                .forEach(el => {
+                    el.classList.add('form-input', 'w-full', 'px-4', 'py-3', 'bg-slate-700', 'border-2', 'border-transparent', 'focus:border-indigo-500', 'rounded-lg', 'text-white', 'placeholder-slate-500', 'focus:outline-none', 'focus:ring-0', 'transition-colors', 'duration-300', 'disabled:opacity-50', 'disabled:bg-slate-800');
+                });
+            
+            // Add shared styles to action buttons
+            document.querySelectorAll('.action-btn').forEach(el => {
+                el.classList.add('w-full', 'bg-slate-700', 'hover:bg-slate-600', 'text-slate-200', 'font-semibold', 'py-3', 'px-4', 'rounded-lg', 'focus:outline-none', 'focus:ring-4', 'focus:ring-slate-400/50', 'transition-colors', 'duration-300', 'flex', 'items-center', 'justify-center', 'space-x-2');
+            });
+
+            // Trigger initial state
+            inputs.url.value = 'https://example.com';
+            switchMode('url'); // Set initial mode
+            debouncedGenerate(); // Generate the initial QR
+        });
+    </script>
+</body>
+</html>
+
+
+
+
