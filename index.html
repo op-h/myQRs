@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark"> <!-- Always dark mode -->
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,24 +15,74 @@
 
     <style>
         body { 
-            font-family: 'Inter', sans-serif; 
+            font-family: 'Inter', sans-serif;
             background-color: #0f172a; /* slate-900 */
         }
-        
-        /* Wrapper for the final visible canvas (QR + Label) */
+        /* Ensure the canvas inside the div is responsive */
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #qrcode canvas, #qrcode img {
+            width: 100% !important;
+            height: auto !important;
+            margin: 0 auto;
+            border-radius: 0.5rem;
+        }
+        /* The wrapper for the final canvas (with label) */
         #final-canvas-wrapper {
             max-width: 288px; /* 256px + 16px padding */
             margin: 0 auto;
+            /* Smooth transition for fade in/out */
+            transition: opacity 150ms ease-out, transform 150ms ease-out, max-height 300ms ease-out, margin-top 300ms ease-out, padding-top 300ms ease-out, padding-bottom 300ms ease-out;
+            opacity: 0;
+            transform: scale(0.95);
+            max-height: 0; /* Start hidden */
+            overflow: hidden; /* Important for max-height transition */
+            padding-top: 0; /* Collapse padding */
+            padding-bottom: 0; /* Collapse padding */
+            margin-top: 0; /* Collapse margin */
         }
+        #final-canvas-wrapper.qr-visible {
+            opacity: 1;
+            transform: scale(1);
+            max-height: 400px; /* Large enough to hold canvas + label */
+            padding-top: 1rem; /* Restore p-4 */
+            padding-bottom: 1rem; /* Restore p-4 */
+            padding-left: 1rem; /* ADDED for even padding */
+            padding-right: 1rem; /* ADDED for even padding */
+            margin-top: 2rem; /* This was the mt-8 on qr-container */
+        }
+        #action-buttons {
+            transition: opacity 150ms ease-out, transform 150ms ease-out, max-height 300ms ease-out, margin-top 300ms ease-out;
+            opacity: 0;
+            transform: scale(0.95);
+            max-height: 0;
+            margin-top: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        #action-buttons.qr-visible {
+            opacity: 1;
+            transform: scale(1);
+            max-height: 100px; /* Enough for buttons */
+            margin-top: 1rem; /* The original mt-4 */
+            pointer-events: auto;
+        }
+
+        .field-error {
+            color: #f87171; /* red-400 */
+            font-size: 0.875rem; /* text-sm */
+            padding-left: 0.25rem;
+            margin-top: 0.25rem; /* mt-1 */
+            min-height: 1.25rem; /* h-5 */
+        }
+
         #final-canvas-wrapper canvas {
             width: 100% !important;
             height: auto !important;
             border-radius: 0.5rem;
-        }
-
-        /* Hidden div used by the library to generate the base QR */
-        #qrcode {
-            display: none;
         }
 
         .tab-active {
@@ -40,56 +90,64 @@
             color: white !important;
         }
         .tab-btn:not(.tab-active) { 
-            color: #cbd5e1; /* slate-300 */ 
+            color: #cbd5e1; /* slate-300 */
         }
+        
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body class="bg-slate-900 flex items-center justify-center min-h-screen p-4 transition-colors duration-500">
 
     <div class="w-full max-w-lg mx-auto">
         <div class="bg-slate-800 rounded-2xl shadow-2xl shadow-black/40 p-6 md:p-8 relative">
             
             <div class="text-center mb-6">
                 <h1 class="text-2xl md:text-3xl font-bold text-white">QR Code Generator</h1>
-                <p class="text-slate-400 mt-2">Create QR codes instantly.</p>
+                <p class="text-slate-400 mt-2">Create & Customize QR codes instantly.</p>
             </div>
 
             <!-- Tabs -->
-            <div class="grid grid-cols-5 gap-2 mb-6 bg-slate-700 p-1 rounded-lg">
-                <button id="urlTab" class="tab-btn tab-active px-3 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
+            <div class="grid grid-cols-5 gap-1 mb-6 bg-slate-700 p-1 rounded-lg">
+                <button id="urlTab" class="tab-btn tab-active px-2 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
                     <span class="hidden sm:inline">URL</span>
                 </button>
-                <button id="textTab" class="tab-btn px-3 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
+                <button id="textTab" class="tab-btn px-2 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
                     <span class="hidden sm:inline">Text</span>
                 </button>
-                <button id="wifiTab" class="tab-btn px-3 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v.008l.004.004A11.23 11.23 0 0118 10.5a.75.75 0 01-1.5 0 9.73 9.73 0 00-6.5-3.03V3.75A.75.75 0 0110 3zm0 4a.75.75 0 01.75.75v.008l.004.004A7.23 7.23 0 0115 11.25a.75.75 0 01-1.5 0A5.73 5.73 0 0010.75 8.3v-.55A.75.75 0 0110 7zm0 4a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" clip-rule="evenodd" /><path d="M4.22 8.72a.75.75 0 00-1.06 1.06l.002.002a11.23 11.23 0 0113.676 0l.002-.002a.75.75 0 10-1.06-1.06 9.73 9.73 0 00-11.556 0z" /></svg>
+                <button id="wifiTab" class="tab-btn px-2 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v.008l.004.004A11.23 11.23 0 0118 10.5a.75.75 0 01-1.5 0 9.73 9.73 0 00-6.5-3.03V3.75A.75.75 0 0110 3zm0 4a.75.75 0 01.75.75v.008l.004.004A7.23 7.23 0 0115 11.25a.75.75 0 01-1.5 0A5.73 5.73 0 0010.75 8.3v-.55A.75.75 0 0110 7zm0 4a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" clip-rule="evenodd" /><path d="M4.22 8.72a.75.75 0 00-1.06 1.06l.002.002a11.23 11.23 0 0113.676 0l.002-.002a.75.75 0 10-1.06-1.06 9.73 9.73 0 00-11.556 0z" /></svg>
                     <span class="hidden sm:inline">WiFi</span>
                 </button>
-                <button id="contactTab" class="tab-btn px-3 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>
+                <button id="contactTab" class="tab-btn px-2 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0012 11z" clip-rule="evenodd" />
+                    </svg>
                     <span class="hidden sm:inline">Contact</span>
                 </button>
-                <button id="emailTab" class="tab-btn px-3 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg>
+                <button id="emailTab" class="tab-btn px-2 py-2 rounded-md font-semibold text-sm transition-colors duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg>
                     <span class="hidden sm:inline">Email</span>
                 </button>
             </div>
 
-            <div id="error-message" class="hidden text-red-400 text-sm text-center mb-4 p-3 bg-red-900/30 rounded-lg"></div>
-
             <!-- Input Sections -->
             <form id="qrForm" class="space-y-4">
                 <div id="urlSection">
+                    <label for="urlInput" class="sr-only">Enter URL</label>
                     <input type="url" id="urlInput" placeholder="https://example.com" class="form-input">
+                    <div id="urlError" class="field-error hidden"></div>
                 </div>
                 <div id="textSection" class="hidden">
+                    <label for="textInput" class="sr-only">Enter any text</label>
                     <textarea id="textInput" placeholder="Enter any text..." rows="4" class="form-input"></textarea>
+                    <div id="textError" class="field-error hidden"></div>
                 </div>
                 <div id="wifiSection" class="hidden space-y-4">
-                    <input type="text" id="ssidInput" placeholder="Network Name (SSID)" class="form-input">
+                    <div>
+                        <input type="text" id="ssidInput" placeholder="Network Name (SSID)" class="form-input">
+                        <div id="ssidError" class="field-error hidden"></div>
+                    </div>
                     <input type="password" id="passwordInput" placeholder="Password" class="form-input">
                     <div class="grid grid-cols-2 gap-4">
                         <select id="encryptionSelect" class="form-input">
@@ -104,20 +162,29 @@
                     </div>
                 </div>
                 <div id="contactSection" class="hidden space-y-4">
-                    <input type="text" id="nameInput" placeholder="Full Name (e.g., John Doe)" class="form-input">
-                    <input type="tel" id="phoneInput" placeholder="Phone Number (e.g., +11234567890)" class="form-input">
+                    <div>
+                        <input type="text" id="nameInput" placeholder="Full Name (e.g., John Doe)" class="form-input">
+                        <div id="nameError" class="field-error hidden"></div>
+                    </div>
+                    <div>
+                        <input type="tel" id="phoneInput" placeholder="Phone Number (e.g., +11234567890)" class="form-input">
+                        <div id="phoneError" class="field-error hidden"></div>
+                    </div>
                 </div>
                 <div id="emailSection" class="hidden space-y-4">
-                    <input type="email" id="emailToInput" placeholder="To: email@example.com" class="form-input">
+                    <div>
+                        <input type="email" id="emailToInput" placeholder="To: email@example.com" class="form-input">
+                        <div id="emailToError" class="field-error hidden"></div>
+                    </div>
                     <input type="text" id="emailSubjectInput" placeholder="Subject" class="form-input">
                     <textarea id="emailBodyInput" placeholder="Email body..." rows="3" class="form-input"></textarea>
                 </div>
-            
+                
                 <!-- Label Toggle -->
                 <div class="flex items-center justify-between pt-2">
-                    <label for="showLabelToggle" class="text-sm font-medium text-slate-300">Add text label (at bottom)</label>
+                    <label for="showLabelToggle" class="text-sm font-medium text-slate-300">Add text label</label>
                     <button type="button" id="showLabelToggle" role="switch" aria-checked="false" class="bg-slate-600 relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-800">
-                        <span class="sr-only">Add label</span>
+                        <span class="sr-only">Add text label</span>
                         <span aria-hidden="true" id="showLabelToggleKnob" class="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
                     </button>
                 </div>
@@ -130,37 +197,37 @@
 
                 <!-- Generate Button Removed - Now Real-time -->
             </form>
-            
+
+            <div id="error-message" class="hidden text-red-400 text-sm text-center my-4 p-3 bg-red-900/30 rounded-lg"></div>
+
             <!-- QR Code Preview -->
-            <div id="qr-container" class="mt-8 text-center opacity-0 scale-95 pointer-events-none transition-all duration-300 ease-in-out">
-                <div id="final-canvas-wrapper" class="bg-slate-700 p-4 rounded-lg inline-block shadow-inner">
-                    <!-- The final canvas (QR + Label) will be inserted here -->
+            <div id="qr-container" class="text-center">
+                <!-- This div now holds the FINAL canvas, which might include the label -->
+                <div id="final-canvas-wrapper" class="bg-slate-700 rounded-lg inline-block shadow-inner">
+                    <!-- This hidden div is used by the library to generate the base QR -->
+                    <div id="qrcode" class="hidden"></div>
                 </div>
                 <p id="qr-filename" class="text-sm text-slate-400 mt-2 truncate"></p>
-                <!-- Hidden div for library to generate base QR -->
-                <div id="qrcode"></div>
             </div>
             
-            <div id="action-buttons" class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 opacity-0 scale-95 pointer-events-none transition-all duration-300 ease-in-out">
-                 <button id="downloadBtn" class="action-btn">
+            <div id="action-buttons" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                 <button id="downloadBtn" class="action-btn bg-indigo-600 hover:bg-indigo-700 text-white">
                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                      <span>Download</span>
                  </button>
-                 <button id="copyBtn" class="action-btn">
+                 <button id="copyBtn" class="action-btn bg-slate-700 hover:bg-slate-600 text-slate-200">
                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" /><path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h6a2 2 0 00-2-2H5z" /></svg>
                      <span id="copyBtnText">Copy Image</span>
                  </button>
-                 <button id="shareBtn" class="action-btn sm:col-span-2 md:col-span-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                    </svg>
-                    <span>Share</span>
-                 </button>
+                 <button id="shareBtn" class="action-btn bg-slate-700 hover:bg-slate-600 text-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
+                    <span id="shareBtnText">Share</span>
+                </button>
             </div>
         </div>
         
-        <footer class="mt-6 text-center text-sm text-slate-400">
-             Designed by OPH All rights reserved to the OP team.
+        <footer class="mt-6 text-center text-base text-slate-400"> <!-- Made larger -->
+             Designed by <a href="https://t.me/op_h11" target="_blank" rel="noopener noreferrer" class="underline hover:text-indigo-400 transition-colors">OPH</a> All rights reserved to the OP team.
         </footer>
     </div>
 
@@ -178,7 +245,6 @@
             };
 
             // --- Element Selection ---
-            const qrForm = document.getElementById('qrForm');
             const qrcodeDiv = document.getElementById('qrcode'); // Hidden div for base generation
             const finalCanvasWrapper = document.getElementById('final-canvas-wrapper'); // Visible wrapper
             const qrContainer = document.getElementById('qr-container');
@@ -218,39 +284,78 @@
                 emailBody: document.getElementById('emailBodyInput'),
             };
 
-            // Customization Inputs
-            const customLabelSection = document.getElementById('customLabelSection'); // NEW
-            const customLabelInput = document.getElementById('customLabelInput'); // NEW
+            // Label Inputs
+            const showLabelToggle = document.getElementById('showLabelToggle');
+            const showLabelToggleKnob = document.getElementById('showLabelToggleKnob');
+            const customLabelSection = document.getElementById('customLabelSection');
+            const customLabelInput = document.getElementById('customLabelInput');
 
             // Action Buttons
             const downloadBtn = document.getElementById('downloadBtn');
             const copyBtn = document.getElementById('copyBtn');
             const copyBtnText = document.getElementById('copyBtnText');
             const shareBtn = document.getElementById('shareBtn');
+            const shareBtnText = document.getElementById('shareBtnText');
             
+            // *** NEW: Field Error Elements ***
+            const allFieldErrors = document.querySelectorAll('.field-error');
+
             // --- App State ---
             let qrcode = null;
             let currentMode = 'url';
             let showLabel = false;
             let currentFinalCanvas = null; // Store the final canvas for download/copy
+            let qrVisible = false;
+
+            // --- NEW: Validation Rules ---
+            const validationRules = {
+                urlInput: {
+                    regex: /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/,
+                    message: "Please enter a valid URL (e.g., https://example.com)"
+                },
+                textInput: {
+                    maxLength: 1024,
+                    message: "Text is too long for a QR code."
+                },
+                ssidInput: {
+                    required: true,
+                    message: "Network Name (SSID) is required."
+                },
+                nameInput: {
+                    required: true,
+                    message: "Full Name is required."
+                },
+                phoneInput: {
+                    regex: /^\+?[0-9\s\-()]{7,}$/,
+                    message: "Please enter a valid phone number (min 7 digits)."
+                },
+                emailToInput: {
+                    regex: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/,
+                    message: "Please enter a valid email address."
+                }
+            };
 
             // --- Core App Logic ---
-
-            const showQr = () => {
-                qrContainer.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
-                actionButtons.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
-            };
-            const hideQr = () => {
-                qrContainer.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
-                actionButtons.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
-            };
-
             const clearQRCode = () => {
                 qrcodeDiv.innerHTML = '';
                 finalCanvasWrapper.innerHTML = ''; // Clear the visible canvas
-                // No longer hiding here, hideQr() will be called if needed
-                qrcode = null;
                 currentFinalCanvas = null;
+            };
+
+            const hideQr = () => {
+                if (!qrVisible) return;
+                qrVisible = false;
+                finalCanvasWrapper.classList.remove('qr-visible');
+                actionButtons.classList.remove('qr-visible');
+                qrFilename.classList.add('opacity-0');
+            };
+
+            const showQr = () => {
+                if (qrVisible) return;
+                qrVisible = true;
+                finalCanvasWrapper.classList.add('qr-visible');
+                actionButtons.classList.add('qr-visible');
+                qrFilename.classList.remove('opacity-0');
             };
 
             const clearError = () => {
@@ -258,15 +363,25 @@
                 errorMessage.textContent = '';
             };
 
+            // *** NEW: Clear All Field Errors ---
+            const clearAllFieldErrors = () => {
+                allFieldErrors.forEach(el => {
+                    el.classList.add('hidden');
+                    el.textContent = '';
+                });
+            };
+
             const showError = (message) => {
                 errorMessage.textContent = message;
                 errorMessage.classList.remove('hidden');
-                hideQr(); // Hide QR on error
+                hideQr();
+                clearQRCode(); // Clear the QR preview on error
             };
 
             const switchMode = (mode) => {
                 currentMode = mode;
                 clearError();
+                clearAllFieldErrors(); // NEW
                 
                 Object.values(tabs).forEach(tab => tab.classList.remove('tab-active'));
                 Object.values(sections).forEach(section => section.classList.add('hidden'));
@@ -318,10 +433,72 @@
                 if (label.length > 30) label = label.substring(0, 27) + '...';
                 return label;
             };
+
+            // --- NEW: Validation Functions ---
+            const validateField = (inputId, value) => {
+                const errorEl = document.getElementById(inputId.replace('Input', 'Error'));
+                const rule = validationRules[inputId];
+                
+                if (!errorEl || !rule) return true; // No validation rule for this element
+
+                let isValid = true;
+                let errorMessageText = '';
+                const trimmedValue = value.trim();
+
+                if (rule.required && !trimmedValue) {
+                    isValid = false;
+                    errorMessageText = rule.message;
+                } else if (trimmedValue && rule.regex && !rule.regex.test(trimmedValue)) {
+                    // Only test regex if there is a value (don't flag empty optional fields)
+                    isValid = false;
+                    errorMessageText = rule.message;
+                } else if (rule.maxLength && value.length > rule.maxLength) {
+                    isValid = false;
+                    errorMessageText = rule.message;
+                }
+
+                if (isValid) {
+                    errorEl.classList.add('hidden');
+                    errorEl.textContent = '';
+                } else {
+                    errorEl.classList.remove('hidden');
+                    errorEl.textContent = errorMessageText;
+                }
+                return isValid;
+            };
+
+            const validateAllFields = () => {
+                let isAppValid = true;
+                
+                Object.keys(validationRules).forEach(inputId => {
+                    const inputEl = document.getElementById(inputId);
+                    if (!inputEl) return;
+
+                    // Check if the input is in a visible section
+                    let parentSection = inputEl.closest('div[id$="Section"]');
+                    if (parentSection && !parentSection.classList.contains('hidden')) {
+                        // Only validate required fields or fields with content
+                        const rule = validationRules[inputId];
+                        if (rule.required || inputEl.value.trim()) {
+                            if (!validateField(inputId, inputEl.value)) {
+                                isAppValid = false;
+                            }
+                        } else {
+                            // If optional and empty, ensure error is hidden
+                            validateField(inputId, ''); // This will clear the error
+                        }
+                    }
+                });
+                return isAppValid;
+            };
             
             // --- Main Generation Function ---
             const generateQRCode = () => {
-                clearError();
+                clearError(); // Clear global error
+                
+                // *** NEW: Validate fields FIRST ***
+                const isFormValid = validateAllFields();
+
                 let textToEncode = '';
                 let label = ''; // This will be set from custom input
                 let filename = 'qrcode.png';
@@ -385,10 +562,14 @@
                             break;
                     }
 
-                    if (!hasRequiredData) {
-                        clearQRCode();
-                        hideQr(); // Fade out if no data
-                        return; // Not an error, just no data
+                    // Update label input field *before* checking for data
+                    if (showLabel) {
+                        customLabelInput.value = customLabelInput.value || getDefaultLabel();
+                    }
+
+                    if (!isFormValid || !hasRequiredData) {
+                        hideQr(); // Fade out if no data or invalid
+                        return;
                     }
 
                     // *** FIX: START FADE-OUT ***
@@ -403,9 +584,9 @@
                     qrcode = new QRCode(qrcodeDiv, {
                         text: textToEncode,
                         width: 256, height: 256,
-                        colorDark: '#0f172a', // Always dark on light for scannability
-                        colorLight: '#ffffff',
-                        correctLevel: QRCode.CorrectLevel.H
+                        colorDark: '#0f172a', // slate-900
+                        colorLight: '#ffffff', // white
+                        correctLevel: QRCode.CorrectLevel.H // High for reliability
                     });
 
                     // 3. Apply Label (if needed)
@@ -422,7 +603,7 @@
                     setTimeout(() => {
                         drawFinalCanvas(label);
                         showQr(); // Fade in the new QR
-                    }, 150); // Increased to 150ms for a smoother cross-fade
+                    }, 150); // 150ms for a smooth cross-fade
 
                 } catch (error) {
                     console.error('QR Generation Error:', error);
@@ -431,7 +612,7 @@
             };
             const debouncedGenerate = debounce(generateQRCode, 300);
 
-            // --- Overlay/Label Drawing Function ---
+            // --- Overlay Drawing Function ---
             const drawFinalCanvas = (label) => {
                 const qrCanvas = qrcodeDiv.querySelector('canvas');
                 const qrImg = qrcodeDiv.querySelector('img');
@@ -445,8 +626,8 @@
                 finalCanvas.height = baseSize + labelHeight;
                 const ctx = finalCanvas.getContext('2d');
                 
-                // 1. Draw background (for label area)
-                ctx.fillStyle = '#ffffff'; // Always white background
+                // 1. Draw background (white for scannability, including label area)
+                ctx.fillStyle = '#ffffff'; // white
                 ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
                 // 2. Draw the base QR code
@@ -458,7 +639,7 @@
                     ctx.font = `600 ${fontSize}px 'Inter'`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillStyle = '#0f172a'; // Always dark text
+                    ctx.fillStyle = '#0f172a'; // slate-900 (dark text)
                     
                     const labelY = baseSize + (labelHeight / 2);
                     ctx.fillText(label, baseSize / 2, labelY);
@@ -508,19 +689,29 @@
                 const isNone = inputs.encryption.value === 'nopass';
                 inputs.password.disabled = isNone;
                 if (isNone) inputs.password.value = '';
-                debouncedGenerate(); // Update QR
+                debouncedGenerate(); // Update QR if password was cleared
             });
 
             inputs.url.addEventListener('blur', () => {
                 let url = inputs.url.value.trim();
                 // Only add if it's not a mailto: tel: etc.
                 if (url && !url.match(/^[a-zA-Z]+:/) && url.includes('.')) {
-                    inputs.url.value = 'https://' + url;
+                    inputs.url.value = 'https://' + url; // Default to https
                     debouncedGenerate();
                 }
             });
 
             // 4. Action Buttons (Download/Copy/Share)
+            const getCanvasBlob = () => {
+                return new Promise((resolve, reject) => {
+                    if (!currentFinalCanvas) return reject(new Error("QR code canvas not found."));
+                    currentFinalCanvas.toBlob((blob) => {
+                        if (blob) resolve(blob);
+                        else reject(new Error("Failed to create blob from canvas."));
+                    }, 'image/png');
+                });
+            };
+
             downloadBtn.addEventListener('click', () => {
                 if (currentFinalCanvas) {
                     const link = document.createElement('a');
@@ -530,62 +721,50 @@
                     link.click();
                     document.body.removeChild(link);
                 } else {
-                    showError("Could not find QR code to download.");
+                    alert("Could not find QR code canvas to download.");
                 }
             });
 
-            copyBtn.addEventListener('click', () => {
-                if (!currentFinalCanvas) return showError("Could not find QR code to copy.");
-                
-                currentFinalCanvas.toBlob((blob) => {
+            copyBtn.addEventListener('click', async () => {
+                try {
+                    const blob = await getCanvasBlob();
                     if (navigator.clipboard?.write) {
-                        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-                            .then(() => {
-                                copyBtnText.textContent = 'Copied!';
-                                setTimeout(() => { copyBtnText.textContent = 'Copy Image'; }, 2000);
-                            }).catch(err => {
-                                console.error('Failed to copy image:', err);
-                                showError('Failed to copy image.');
-                            });
+                        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                        copyBtnText.textContent = 'Copied!';
+                        setTimeout(() => { copyBtnText.textContent = 'Copy Image'; }, 2000);
                     } else {
-                        // Fallback for environments where clipboard.write is not supported
-                        try {
-                            const data = [new ClipboardItem({ 'image/png': blob })];
-                            navigator.clipboard.write(data);
-                            copyBtnText.textContent = 'Copied!';
-                            setTimeout(() => { copyBtnText.textContent = 'Copy Image'; }, 2000);
-                        } catch (err_fallback) {
-                             console.error('Failed to copy image (fallback):', err_fallback);
-                            showError('Clipboard API not supported.');
-                        }
+                        alert('Clipboard API not supported by your browser.');
                     }
-                }, 'image/png');
+                } catch (err) {
+                    console.error('Failed to copy image:', err);
+                    alert(`Failed to copy: ${err.message}`);
+                }
             });
 
-            shareBtn.addEventListener('click', () => {
-                if (!currentFinalCanvas) return showError("Could not find QR code to share.");
+            shareBtn.addEventListener('click', async () => {
+                if (!navigator.share) {
+                    alert('Share API not supported by your browser. Try copying the image instead.');
+                    return;
+                }
 
-                currentFinalCanvas.toBlob(async (blob) => {
+                try {
+                    const blob = await getCanvasBlob();
                     const file = new File([blob], qrFilename.textContent || 'qrcode.png', { type: 'image/png' });
-                    const shareData = {
-                        title: 'QR Code',
-                        text: qrFilename.textContent,
-                        files: [file],
-                    };
                     
-                    if (navigator.canShare && navigator.canShare(shareData)) {
-                        try {
-                            await navigator.share(shareData);
-                        } catch (err) {
-                            if (err.name !== 'AbortError') {
-                                console.error('Share failed:', err);
-                                showError('Share failed.');
-                            }
-                        }
-                    } else {
-                        showError('Sharing not supported by your browser.');
+                    await navigator.share({
+                        title: 'QR Code',
+                        text: `Here is the QR code for ${qrFilename.textContent.replace('.png', '')}`,
+                        files: [file]
+                    });
+                    shareBtnText.textContent = 'Shared!';
+                    setTimeout(() => { shareBtnText.textContent = 'Share'; }, 2000);
+                } catch (err) {
+                    // Don't show an error if user just cancelled the share dialog
+                    if (err.name !== 'AbortError') {
+                        console.error('Failed to share:', err);
+                        alert(`Failed to share: ${err.message}`);
                     }
-                }, 'image/png');
+                }
             });
 
             // 5. Utility
@@ -600,17 +779,29 @@
             
             // Add shared styles to action buttons
             document.querySelectorAll('.action-btn').forEach(el => {
-                el.classList.add('w-full', 'bg-slate-700', 'hover:bg-slate-600', 'text-slate-200', 'font-semibold', 'py-3', 'px-4', 'rounded-lg', 'focus:outline-none', 'focus:ring-4', 'focus:ring-slate-400/50', 'transition-colors', 'duration-300', 'flex', 'items-center', 'justify-center', 'space-x-2');
+                el.classList.add('w-full', 'font-semibold', 'py-3', 'px-4', 'rounded-lg', 'focus:outline-none', 'focus:ring-4', 'focus:ring-indigo-600/50', 'transition-all', 'duration-300', 'flex', 'items-center', 'justify-center', 'space-x-2');
             });
 
+            // Hide action buttons initially
+            // actionButtons.classList.add('opacity-0', 'pointer-events-none'); // This is now handled by CSS
+            qrFilename.classList.add('opacity-0');
+            
             // Trigger initial state
-            inputs.url.value = 'https://example.com';
-            switchMode('url'); // Set initial mode
-            debouncedGenerate(); // Generate the initial QR
+            inputs.url.value = 'https://example.com'; // Add default example
+            debouncedGenerate();
         });
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
 
 
 
