@@ -646,13 +646,19 @@
             const shareText = state.filename.replace(/\.png$/i, "");
             const shareUrl = getShareUrl();
 
-            if (canShareFiles(file)) {
-                await navigator.share({
-                    title: shareTitle,
-                    text: shareText,
-                    files: [file]
-                });
-                return;
+            if (shouldTryFileShare(file)) {
+                try {
+                    await navigator.share({
+                        title: shareTitle,
+                        text: shareText,
+                        files: [file]
+                    });
+                    return;
+                } catch (error) {
+                    if (!isFileShareFallbackError(error)) {
+                        throw error;
+                    }
+                }
             }
 
             await navigator.share({
@@ -924,11 +930,38 @@
         }
     }
 
+    function shouldTryFileShare(file) {
+        if (!navigator.share) {
+            return false;
+        }
+        if (typeof navigator.canShare === "function") {
+            return canShareFiles(file);
+        }
+        return true;
+    }
+
+    function isFileShareFallbackError(error) {
+        return Boolean(error) && (error.name === "TypeError" || error.name === "DataError" || error.name === "NotSupportedError");
+    }
+
     function updateShareAvailability() {
         const supported = Boolean(navigator.share);
+        const mode = getPreferredShareMode();
         elements.shareBtn.disabled = !supported;
         elements.shareBtn.hidden = !supported;
         elements.shareBtn.title = supported ? "" : "Share is not supported in this browser.";
+        elements.shareBtn.textContent = mode;
+    }
+
+    function getPreferredShareMode() {
+        if (!navigator.share) {
+            return "Share";
+        }
+        if (typeof navigator.canShare === "function") {
+            const testFile = new File(["qr"], "qrcode.png", { type: "image/png" });
+            return canShareFiles(testFile) ? "Share PNG" : "Share Link";
+        }
+        return "Share";
     }
 
     async function decompressBytes(bytes) {
