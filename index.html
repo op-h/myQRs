@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#101714">
+    <title>myqrs.me</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <div class="app-shell">
+        <main class="workspace-grid">
+            <section class="control-panel surface">
+                <div class="designer-mark">Designed by OPH</div>
+                <div class="panel-head">
+                    <div>
+                        <p class="section-kicker">Generator</p>
+                        <h2>Build QR codes</h2>
+                    </div>
+                    <button id="clearFormBtn" class="ghost-btn" type="button">Reset</button>
+                </div>
+
+                <nav class="tab-grid" aria-label="QR modes">
+                    <button class="tab-btn is-active" data-mode="url" type="button">URL</button>
+                    <button class="tab-btn" data-mode="text" type="button">Text</button>
+                    <button class="tab-btn" data-mode="wifi" type="button">WiFi</button>
+                    <button class="tab-btn" data-mode="contact" type="button">Contact</button>
+                    <button class="tab-btn" data-mode="email" type="button">Email</button>
+                    <button class="tab-btn" data-mode="secure" type="button">Protected</button>
+                </nav>
+
+                <form id="qrForm" novalidate>
+                    <section class="mode-panel is-active" data-section="url">
+                        <label class="field">
+                            <span>Website URL</span>
+                            <input id="urlInput" class="input" type="url" placeholder="https://example.com" autocomplete="url">
+                            <small class="field-error" id="urlError"></small>
+                        </label>
+                    </section>
+
+                    <section class="mode-panel" data-section="text">
+                        <label class="field">
+                            <span>Plain text</span>
+                            <textarea id="textInput" class="input" rows="5" placeholder="Paste text, notes, or instructions"></textarea>
+                            <small class="field-error" id="textError"></small>
+                        </label>
+                    </section>
+
+                    <section class="mode-panel" data-section="wifi">
+                        <div class="field-grid">
+                            <label class="field">
+                                <span>Network name</span>
+                                <input id="ssidInput" class="input" type="text" placeholder="Office-WiFi">
+                                <small class="field-error" id="ssidError"></small>
+                            </label>
+                            <label class="field">
+                                <span>Password</span>
+                                <input id="passwordInput" class="input" type="password" placeholder="Password">
+                            </label>
+                        </div>
+                        <div class="field-grid">
+                            <label class="field">
+                                <span>Security</span>
+                                <select id="encryptionSelect" class="input">
+                                    <option value="WPA">WPA/WPA2</option>
+                                    <option value="WEP">WEP</option>
+                                    <option value="nopass">None</option>
+                                </select>
+                            </label>
+                            <label class="field checkbox-field">
+                                <span>Hidden network</span>
+                                <input id="hiddenCheckbox" type="checkbox">
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="mode-panel" data-section="contact">
+                        <div class="field-grid">
+                            <label class="field">
+                                <span>Full name</span>
+                                <input id="nameInput" class="input" type="text" placeholder="John Doe">
+                                <small class="field-error" id="nameError"></small>
+                            </label>
+                            <label class="field">
+                                <span>Phone number</span>
+                                <input id="phoneInput" class="input" type="tel" placeholder="+11234567890">
+                                <small class="field-error" id="phoneError"></small>
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="mode-panel" data-section="email">
+                        <div class="field-grid">
+                            <label class="field">
+                                <span>Email address</span>
+                                <input id="emailToInput" class="input" type="email" placeholder="name@example.com">
+                                <small class="field-error" id="emailToError"></small>
+                            </label>
+                            <label class="field">
+                                <span>Subject</span>
+                                <input id="emailSubjectInput" class="input" type="text" placeholder="Subject">
+                            </label>
+                        </div>
+                        <label class="field">
+                            <span>Message</span>
+                            <textarea id="emailBodyInput" class="input" rows="4" placeholder="Optional email body"></textarea>
+                        </label>
+                    </section>
+
+                    <section class="mode-panel" data-section="secure">
+                        <label class="field">
+                            <span>Secret message</span>
+                            <textarea id="secureMessageInput" class="input" rows="5" placeholder="This content will be encrypted before being placed into the QR code"></textarea>
+                            <small class="field-error" id="secureMessageError"></small>
+                        </label>
+                        <div class="field-grid">
+                            <label class="field">
+                                <span>Unlock code</span>
+                                <input id="secureCodeInput" class="input" type="password" placeholder="Enter a code">
+                                <small class="field-error" id="secureCodeError"></small>
+                            </label>
+                            <label class="field">
+                                <span>Hint (optional)</span>
+                                <input id="secureHintInput" class="input" type="text" placeholder="Shown before unlock">
+                            </label>
+                        </div>
+                        <p class="panel-note">Protected QR codes can be uploaded later and unlocked by entering the same code.</p>
+                    </section>
+
+                    <div class="inline-options">
+                        <label class="switch-row" for="showLabelToggle">
+                            <span>Add label under QR</span>
+                            <button id="showLabelToggle" class="switch" type="button" role="switch" aria-checked="false">
+                                <span class="switch-knob"></span>
+                            </button>
+                        </label>
+                        <label class="field custom-label-field hidden" id="customLabelSection">
+                            <span>Custom label</span>
+                            <input id="customLabelInput" class="input" type="text" placeholder="Custom label">
+                        </label>
+                    </div>
+                </form>
+
+                <div id="globalError" class="banner error hidden" role="alert"></div>
+                <div id="globalNotice" class="banner success hidden" aria-live="polite"></div>
+            </section>
+
+            <section class="preview-panel surface">
+                <div class="panel-head">
+                    <div>
+                        <p class="section-kicker">Preview</p>
+                        <h2>Ready to export</h2>
+                    </div>
+                    <span class="preview-meta" id="qrFilename">No QR generated yet</span>
+                </div>
+
+                <div class="preview-stage">
+                    <div id="finalCanvasWrapper" class="qr-frame empty">
+                        <div class="qr-placeholder">
+                            <strong>Waiting for content</strong>
+                            <span>Fill any section to generate a QR code instantly.</span>
+                        </div>
+                    </div>
+                    <div id="qrcode" class="hidden"></div>
+                </div>
+
+                <div class="action-grid">
+                    <button id="downloadBtn" class="primary-btn" type="button">Download</button>
+                    <button id="copyBtn" class="secondary-btn" type="button">Copy Image</button>
+                    <button id="shareBtn" class="secondary-btn" type="button">Share</button>
+                    <button id="saveBtn" class="secondary-btn" type="button">Save In Browser</button>
+                </div>
+
+                <section class="unlock-panel">
+                    <div class="panel-head panel-head-tight">
+                        <div>
+                            <p class="section-kicker">Protected Upload</p>
+                            <h3>Open an encrypted QR</h3>
+                        </div>
+                    </div>
+                    <label class="upload-zone" for="secureQrUpload">
+                        <input id="secureQrUpload" type="file" accept="image/*">
+                        <span>Upload protected QR image</span>
+                        <small>Image is decoded locally in your browser.</small>
+                    </label>
+                    <div id="secureDecodeStatus" class="upload-status"></div>
+                    <div id="decryptedMessageCard" class="message-card hidden">
+                        <span class="message-label">Unlocked message</span>
+                        <pre id="decryptedMessageOutput"></pre>
+                    </div>
+                </section>
+            </section>
+
+            <aside class="saved-panel surface">
+                <div class="panel-head">
+                    <div>
+                        <p class="section-kicker">Saved</p>
+                        <h2>Browser library</h2>
+                    </div>
+                    <button id="clearSavedBtn" class="ghost-btn" type="button">Clear All</button>
+                </div>
+                <p class="panel-note">Saved QR codes stay in this browser for later reference, even while offline.</p>
+                <div id="savedList" class="saved-list"></div>
+            </aside>
+        </main>
+
+    </div>
+
+    <dialog id="unlockDialog" class="unlock-dialog">
+        <form id="unlockForm" method="dialog" class="dialog-card">
+            <div class="panel-head panel-head-tight">
+                <div>
+                    <p class="section-kicker">Security Check</p>
+                    <h3>Enter the code</h3>
+                </div>
+                <button class="ghost-btn" id="closeUnlockDialogBtn" type="button">Close</button>
+            </div>
+            <p id="unlockHint" class="panel-note"></p>
+            <label class="field">
+                <span>Unlock code</span>
+                <input id="unlockCodeInput" class="input" type="password" placeholder="Enter the code" autocomplete="off">
+                <small id="unlockError" class="field-error"></small>
+            </label>
+            <div class="dialog-actions">
+                <button id="unlockSubmitBtn" class="primary-btn" type="submit">Unlock Message</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="./qrcode.min.js"></script>
+    <script src="./jsQR.js"></script>
+    <script src="./app.js"></script>
+</body>
+</html>
