@@ -139,6 +139,7 @@
         renderSavedItems();
         syncLabelToggle();
         hydrateSecurePayloadFromUrl();
+        updateShareAvailability();
         state.mode = "url";
         elements.inputs.url.value = "https://example.com";
         requestGenerate();
@@ -641,10 +642,23 @@
         try {
             const blob = await canvasToBlob(state.currentCanvas);
             const file = new File([blob], state.filename, { type: "image/png" });
+            const shareTitle = "QR Code";
+            const shareText = state.filename.replace(/\.png$/i, "");
+            const shareUrl = getShareUrl();
+
+            if (canShareFiles(file)) {
+                await navigator.share({
+                    title: shareTitle,
+                    text: shareText,
+                    files: [file]
+                });
+                return;
+            }
+
             await navigator.share({
-                title: "QR Code",
-                text: state.filename.replace(/\.png$/i, ""),
-                files: [file]
+                title: shareTitle,
+                text: `${shareText} ${shareUrl}`.trim(),
+                url: shareUrl
             });
         } catch (error) {
             if (error && error.name !== "AbortError") {
@@ -848,6 +862,13 @@
         return `${baseUrl}#unlock=${encodedPayload}`;
     }
 
+    function getShareUrl() {
+        if (/^https?:/i.test(location.href)) {
+            return location.href;
+        }
+        return getBaseUnlockUrl();
+    }
+
     function getBaseUnlockUrl() {
         if (/^https?:/i.test(location.href)) {
             return `${location.origin}${location.pathname}`;
@@ -890,6 +911,24 @@
         } catch (_) {
             return bytes;
         }
+    }
+
+    function canShareFiles(file) {
+        if (!navigator.share || typeof navigator.canShare !== "function") {
+            return false;
+        }
+        try {
+            return navigator.canShare({ files: [file] });
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function updateShareAvailability() {
+        const supported = Boolean(navigator.share);
+        elements.shareBtn.disabled = !supported;
+        elements.shareBtn.hidden = !supported;
+        elements.shareBtn.title = supported ? "" : "Share is not supported in this browser.";
     }
 
     async function decompressBytes(bytes) {

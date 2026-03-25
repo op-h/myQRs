@@ -407,6 +407,14 @@ textarea.input {
     border-color: rgba(255, 255, 255, 0.07);
 }
 
+.ghost-btn:disabled,
+.primary-btn:disabled,
+.secondary-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .unlock-panel {
     padding-top: 4px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
