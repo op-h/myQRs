@@ -123,7 +123,7 @@
                 if (!value.trim()) {
                     return "Secret message is required.";
                 }
-                return value.length > 5000 ? "Protected messages are too large for one QR code." : "";
+                return value.length > 12000 ? "Protected messages are too large for one QR code." : "";
             }
         },
         secureCode: {
@@ -786,34 +786,51 @@
         const encoded = new TextEncoder().encode(message);
         const compressed = await compressBytes(encoded);
         const cipherBuffer = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, compressed);
+        const hintBytes = new TextEncoder().encode(hint).slice(0, 1024);
+        const cipherBytes = new Uint8Array(cipherBuffer);
+        const flags = compressed.length !== encoded.length ? 1 : 0;
+        const payloadBytes = new Uint8Array(4 + salt.length + iv.length + hintBytes.length + cipherBytes.length);
+        let offset = 0;
 
-        const payload = {
-            v: 1,
-            hint,
-            zip: compressed.length !== encoded.length,
-            salt: bytesToBase64(salt),
-            iv: bytesToBase64(iv),
-            data: bytesToBase64(new Uint8Array(cipherBuffer))
-        };
+        payloadBytes[offset++] = 1;
+        payloadBytes[offset++] = flags;
+        payloadBytes[offset++] = (hintBytes.length >> 8) & 255;
+        payloadBytes[offset++] = hintBytes.length & 255;
+        payloadBytes.set(salt, offset);
+        offset += salt.length;
+        payloadBytes.set(iv, offset);
+        offset += iv.length;
+        payloadBytes.set(hintBytes, offset);
+        offset += hintBytes.length;
+        payloadBytes.set(cipherBytes, offset);
 
-        const payloadText = SECURE_PREFIX + bytesToBase64(new TextEncoder().encode(JSON.stringify(payload)));
-        return buildUnlockUrl(payloadText);
+        return buildUnlockUrl(payloadBytes);
     }
 
     function parseSecurePayload(rawText) {
         const encoded = rawText.startsWith(SECURE_PREFIX)
             ? rawText.slice(SECURE_PREFIX.length)
             : getHashValue(rawText);
-        const jsonText = new TextDecoder().decode(base64ToBytes(encoded));
-        return JSON.parse(jsonText);
+        const payloadBytes = base64ToBytes(encoded);
+
+        if (payloadBytes[0] === 123) {
+            const legacyJson = new TextDecoder().decode(payloadBytes);
+            const legacyPayload = JSON.parse(legacyJson);
+            return {
+                hint: legacyPayload.hint || "",
+                zip: Boolean(legacyPayload.zip),
+                salt: base64ToBytes(legacyPayload.salt),
+                iv: base64ToBytes(legacyPayload.iv),
+                data: base64ToBytes(legacyPayload.data)
+            };
+        }
+
+        return parseCompactSecurePayload(payloadBytes);
     }
 
     async function decryptSecurePayload(payload, code) {
-        const salt = base64ToBytes(payload.salt);
-        const iv = base64ToBytes(payload.iv);
-        const data = base64ToBytes(payload.data);
-        const key = await deriveAesKey(code, salt);
-        const plainBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
+        const key = await deriveAesKey(code, payload.salt);
+        const plainBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv: payload.iv }, key, payload.data);
         const plainBytes = new Uint8Array(plainBuffer);
         const normalized = payload.zip ? await decompressBytes(plainBytes) : plainBytes;
         return new TextDecoder().decode(normalized);
@@ -862,9 +879,9 @@
         return value.startsWith(SECURE_PREFIX) || value.includes("#unlock=");
     }
 
-    function buildUnlockUrl(payloadText) {
+    function buildUnlockUrl(payloadBytes) {
         const baseUrl = getBaseUnlockUrl();
-        const encodedPayload = toBase64Url(payloadText.slice(SECURE_PREFIX.length));
+        const encodedPayload = toBase64Url(bytesToBase64(payloadBytes));
         return `${baseUrl}#unlock=${encodedPayload}`;
     }
 
@@ -893,14 +910,34 @@
     }
 
     function getQrCorrectionLevel(text) {
-        const length = text.length;
-        if (length > 1800) {
-            return QRCode.CorrectLevel.L;
+        return QRCode.CorrectLevel.L;
+    }
+
+    function parseCompactSecurePayload(payloadBytes) {
+        const version = payloadBytes[0];
+        const flags = payloadBytes[1];
+        const hintLength = (payloadBytes[2] << 8) | payloadBytes[3];
+
+        if (version !== 1) {
+            throw new Error("Unsupported protected payload version.");
         }
-        if (length > 900) {
-            return QRCode.CorrectLevel.M;
+
+        const saltStart = 4;
+        const saltEnd = saltStart + 16;
+        const ivEnd = saltEnd + 12;
+        const hintEnd = ivEnd + hintLength;
+
+        if (payloadBytes.length <= hintEnd) {
+            throw new Error("Protected payload is corrupted.");
         }
-        return QRCode.CorrectLevel.H;
+
+        return {
+            hint: new TextDecoder().decode(payloadBytes.slice(ivEnd, hintEnd)),
+            zip: Boolean(flags & 1),
+            salt: payloadBytes.slice(saltStart, saltEnd),
+            iv: payloadBytes.slice(saltEnd, ivEnd),
+            data: payloadBytes.slice(hintEnd)
+        };
     }
 
     async function compressBytes(bytes) {
