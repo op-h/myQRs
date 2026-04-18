@@ -2,6 +2,38 @@
     "use strict";
 
     const QR_SIZE = 300;
+    const MODE_DETAILS = {
+        url: {
+            badge: "URL MODE",
+            summary: "Create scannable website links with automatic protocol normalization.",
+            preview: "Website QR ready for preview, export, and account saving."
+        },
+        text: {
+            badge: "TEXT MODE",
+            summary: "Encode notes, short instructions, or compact text payloads into a QR.",
+            preview: "Text QR rendered for quick sharing and download."
+        },
+        wifi: {
+            badge: "WIFI MODE",
+            summary: "Generate WiFi join codes with SSID, password, and visibility settings.",
+            preview: "WiFi QR generated for one-scan network onboarding."
+        },
+        contact: {
+            badge: "CONTACT MODE",
+            summary: "Create a contact QR using a compact vCard payload.",
+            preview: "Contact QR ready for device import and sharing."
+        },
+        email: {
+            badge: "EMAIL MODE",
+            summary: "Generate a mailto QR with recipient, subject, and message body.",
+            preview: "Email QR prepared for export and later reuse."
+        },
+        secure: {
+            badge: "PROTECTED MODE",
+            summary: "Encrypt a private message, save it immediately, and generate a QR that opens the unlock route first.",
+            preview: "Protected QR points to the secure unlock route for this app."
+        }
+    };
 
     const state = {
         user: null,
@@ -9,7 +41,8 @@
         currentMode: "url",
         currentCanvas: null,
         currentPayload: null,
-        sharedPayload: null
+        sharedPayload: null,
+        renderToken: 0
     };
 
     const elements = {
@@ -26,18 +59,27 @@
         userEmail: document.getElementById("userEmail"),
         modeButtons: Array.from(document.querySelectorAll("[data-mode]")),
         modeSections: Array.from(document.querySelectorAll("[data-section]")),
+        modeSummary: document.getElementById("modeSummary"),
+        modeBadge: document.getElementById("modeBadge"),
         qrForm: document.getElementById("qrForm"),
         generateBtn: document.getElementById("generateBtn"),
         saveBtn: document.getElementById("saveBtn"),
         clearFormBtn: document.getElementById("clearFormBtn"),
+        secureStatus: document.getElementById("secureStatus"),
         qrcode: document.getElementById("qrcode"),
         previewFrame: document.getElementById("previewFrame"),
         previewEmpty: document.getElementById("previewEmpty"),
         previewTitle: document.getElementById("previewTitle"),
+        previewMeta: document.getElementById("previewMeta"),
+        previewLinkWrap: document.getElementById("previewLinkWrap"),
+        previewLinkText: document.getElementById("previewLinkText"),
+        copyLinkBtn: document.getElementById("copyLinkBtn"),
         downloadBtn: document.getElementById("downloadBtn"),
         copyBtn: document.getElementById("copyBtn"),
         shareBtn: document.getElementById("shareBtn"),
+        shareHelp: document.getElementById("shareHelp"),
         libraryGrid: document.getElementById("libraryGrid"),
+        libraryCount: document.getElementById("libraryCount"),
         statTotal: document.getElementById("statTotal"),
         statProtected: document.getElementById("statProtected"),
         statFavorites: document.getElementById("statFavorites"),
@@ -77,7 +119,8 @@
 
     async function init() {
         bindEvents();
-        updateShareAvailability();
+        clearPreview();
+        switchMode("url");
 
         if (isSharedRoute()) {
             await loadSharedPayload();
@@ -85,7 +128,6 @@
         }
 
         await hydrateSession();
-        switchMode("url");
     }
 
     function bindEvents() {
@@ -107,9 +149,12 @@
 
         elements.downloadBtn.addEventListener("click", downloadCurrentQr);
         elements.copyBtn.addEventListener("click", copyCurrentQr);
+        elements.copyLinkBtn.addEventListener("click", copyPreviewLink);
         elements.shareBtn.addEventListener("click", shareCurrentQr);
 
         elements.publicUnlockForm.addEventListener("submit", handlePublicUnlock);
+
+        window.addEventListener("resize", updateActionState);
     }
 
     async function hydrateSession() {
@@ -135,9 +180,11 @@
                     password: elements.inputs.loginPassword.value
                 })
             });
+
             state.user = data.user;
             showApp();
             await refreshLibrary();
+            resetForm();
         } catch (error) {
             showAlert(elements.authAlert, error.message, "danger");
         }
@@ -156,21 +203,27 @@
                     password: elements.inputs.registerPassword.value
                 })
             });
+
             state.user = data.user;
             showApp();
             await refreshLibrary();
+            resetForm();
         } catch (error) {
             showAlert(elements.authAlert, error.message, "danger");
         }
     }
 
     async function handleLogout() {
-        await fetchJson("/api/auth/logout", { method: "POST" });
+        try {
+            await fetchJson("/api/auth/logout", { method: "POST" });
+        } catch (_) {
+            // The session may already be invalid. Continue resetting local state.
+        }
+
         state.user = null;
         state.items = [];
-        showAuth();
         resetForm();
-        clearPreview();
+        showAuth();
     }
 
     function switchAuthTab(tab) {
@@ -184,15 +237,27 @@
 
     function switchMode(mode) {
         state.currentMode = mode;
+
         elements.modeButtons.forEach((button) => {
             button.classList.toggle("active", button.dataset.mode === mode);
         });
+
         elements.modeSections.forEach((section) => {
             section.classList.toggle("d-none", section.dataset.section !== mode);
         });
-        elements.generateBtn.textContent = mode === "secure" ? "Create Secure QR" : "Generate Preview";
+
+        const details = MODE_DETAILS[mode] || MODE_DETAILS.url;
+        elements.modeSummary.textContent = details.summary;
+        elements.modeBadge.textContent = details.badge;
+        elements.generateBtn.textContent = mode === "secure" ? "Create Protected QR" : "Generate Preview";
         elements.saveBtn.disabled = mode === "secure";
-        elements.saveBtn.textContent = mode === "secure" ? "Secure mode saves on create" : "Save To Library";
+        elements.saveBtn.textContent = mode === "secure" ? "Saved during creation" : "Save To Library";
+
+        if (elements.secureStatus) {
+            elements.secureStatus.textContent = mode === "secure"
+                ? "Protected mode creates an encrypted record first, then renders the secure route as the QR payload."
+                : "Standard modes render locally first so you can preview before saving.";
+        }
     }
 
     async function handleGenerate(event) {
@@ -201,18 +266,22 @@
 
         try {
             if (state.currentMode === "secure") {
+                setBusy(elements.generateBtn, true, "Creating...");
                 const item = await createSecureItem();
-                renderPreview(item.payload, item.label || item.title);
-                showAlert(elements.appAlert, "Protected QR created and saved to your library.", "success");
+                state.currentPayload = item;
+                renderPreviewFromItem(item);
+                showAlert(elements.appAlert, "Protected QR created, saved, and linked to the secure unlock route.", "success");
                 await refreshLibrary();
                 return;
             }
 
             const item = buildPlainQrData();
             state.currentPayload = item;
-            renderPreview(item.payload, item.label || item.title);
+            renderPreviewFromItem(item);
         } catch (error) {
             showAlert(elements.appAlert, error.message, "danger");
+        } finally {
+            setBusy(elements.generateBtn, false, state.currentMode === "secure" ? "Create Protected QR" : "Generate Preview");
         }
     }
 
@@ -220,6 +289,7 @@
         clearAlert(elements.appAlert);
 
         try {
+            setBusy(elements.saveBtn, true, "Saving...");
             const item = state.currentPayload || buildPlainQrData();
             const data = await fetchJson("/api/qrs", {
                 method: "POST",
@@ -232,11 +302,14 @@
                 })
             });
 
-            renderPreview(data.item.payload, data.item.label || data.item.title);
+            state.currentPayload = data.item;
+            renderPreviewFromItem(data.item);
             showAlert(elements.appAlert, "QR saved to your library.", "success");
             await refreshLibrary();
         } catch (error) {
             showAlert(elements.appAlert, error.message, "danger");
+        } finally {
+            setBusy(elements.saveBtn, false, "Save To Library");
         }
     }
 
@@ -299,11 +372,11 @@
     }
 
     async function createSecureItem() {
-        const message = elements.inputs.secureMessage.value.trim();
+        const message = elements.inputs.secureMessage.value;
         const code = elements.inputs.secureCode.value;
         const hint = elements.inputs.secureHint.value.trim();
 
-        if (!message) {
+        if (!message.trim()) {
             throw new Error("Secret message is required.");
         }
         if (code.length < 4) {
@@ -330,6 +403,10 @@
             })
         });
 
+        if (!data.item || !(data.item.shareUrl || data.item.payload)) {
+            throw new Error("Protected QR was saved, but the secure link could not be generated.");
+        }
+
         return data.item;
     }
 
@@ -348,14 +425,15 @@
 
     function renderLibrary() {
         elements.libraryGrid.innerHTML = "";
+        elements.libraryCount.textContent = `${state.items.length} item${state.items.length === 1 ? "" : "s"}`;
 
         if (!state.items.length) {
             elements.libraryGrid.innerHTML = `
                 <div class="col-12">
-                    <div class="library-card text-center">
-                        <h4 class="h5 mb-2">No saved QR items yet</h4>
-                        <p class="library-meta mb-0">Generate a QR and save it to build your account library.</p>
-                    </div>
+                    <article class="library-card text-center">
+                        <h4 class="h5">No saved QR items yet</h4>
+                        <p class="library-meta mb-0">Generate and save a QR to start building your account library.</p>
+                    </article>
                 </div>
             `;
             return;
@@ -363,22 +441,22 @@
 
         state.items.forEach((item) => {
             const column = document.createElement("div");
-            column.className = "col-md-6 col-xl-4";
+            column.className = "col-md-6 col-xxl-4";
             column.innerHTML = `
                 <article class="library-card">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                         <div>
-                            <h4 class="h5 mb-1">${escapeHtml(item.title)}</h4>
+                            <h4 class="h5">${escapeHtml(item.title)}</h4>
                             <div class="library-meta">${escapeHtml(item.type.toUpperCase())} · ${new Date(item.createdAt).toLocaleString()}</div>
                         </div>
                         <span class="badge ${item.isFavorite ? "text-bg-success" : "text-bg-dark"}">${item.isFavorite ? "Favorite" : "Saved"}</span>
                     </div>
-                    <p class="library-meta mb-3">${escapeHtml(item.label || (item.shareUrl || item.payload || "").slice(0, 80) || "Stored in your account")}</p>
+                    <p class="library-meta mb-3">${escapeHtml(buildLibraryDescription(item))}</p>
                     <div class="d-grid gap-2">
-                        <button class="btn btn-success btn-sm" data-action="preview" data-id="${item.id}">Preview</button>
-                        <button class="btn btn-outline-light btn-sm" data-action="favorite" data-id="${item.id}">${item.isFavorite ? "Remove Favorite" : "Add Favorite"}</button>
-                        ${item.shareUrl ? `<button class="btn btn-outline-light btn-sm" data-action="copy-link" data-link="${item.shareUrl}">Copy Secure Link</button>` : ""}
-                        <button class="btn btn-outline-light btn-sm" data-action="delete" data-id="${item.id}">Delete</button>
+                        <button class="btn btn-accent btn-sm" data-action="preview" data-id="${item.id}">Preview</button>
+                        <button class="btn btn-ghost btn-sm" data-action="favorite" data-id="${item.id}">${item.isFavorite ? "Remove Favorite" : "Add Favorite"}</button>
+                        ${item.shareUrl ? `<button class="btn btn-ghost btn-sm" data-action="copy-link" data-link="${escapeAttribute(item.shareUrl)}">Copy Secure Link</button>` : ""}
+                        <button class="btn btn-ghost btn-sm" data-action="delete" data-id="${item.id}">Delete</button>
                     </div>
                 </article>
             `;
@@ -390,52 +468,100 @@
                 const action = button.dataset.action;
                 const id = button.dataset.id;
 
-                if (action === "preview") {
-                    const item = state.items.find((entry) => entry.id === id);
-                    if (item) {
-                        renderPreview(item.payload, item.label || item.title);
+                try {
+                    if (action === "preview") {
+                        const item = state.items.find((entry) => entry.id === id);
+                        if (!item) {
+                            return;
+                        }
+                        state.currentPayload = item;
+                        renderPreviewFromItem(item);
+                        clearAlert(elements.appAlert);
                     }
-                }
 
-                if (action === "favorite") {
-                    await fetchJson(`/api/qrs/${id}/favorite`, { method: "PATCH" });
-                    await refreshLibrary();
-                }
+                    if (action === "favorite") {
+                        await fetchJson(`/api/qrs/${id}/favorite`, { method: "PATCH" });
+                        await refreshLibrary();
+                    }
 
-                if (action === "copy-link") {
-                    await navigator.clipboard.writeText(button.dataset.link);
-                    showAlert(elements.appAlert, "Secure link copied.", "success");
-                }
+                    if (action === "copy-link") {
+                        await copyText(button.dataset.link);
+                        showAlert(elements.appAlert, "Secure link copied.", "success");
+                    }
 
-                if (action === "delete") {
-                    await fetchJson(`/api/qrs/${id}`, { method: "DELETE" });
-                    await refreshLibrary();
-                    showAlert(elements.appAlert, "QR item deleted.", "success");
+                    if (action === "delete") {
+                        await fetchJson(`/api/qrs/${id}`, { method: "DELETE" });
+                        if (state.currentPayload && state.currentPayload.id === id) {
+                            clearPreview();
+                        }
+                        await refreshLibrary();
+                        showAlert(elements.appAlert, "QR item deleted.", "success");
+                    }
+                } catch (error) {
+                    showAlert(elements.appAlert, error.message, "danger");
                 }
             });
         });
     }
 
-    function renderPreview(payload, label) {
+    function renderPreviewFromItem(item) {
+        const payload = item.shareUrl || item.payload;
+        if (!payload) {
+            throw new Error("This QR item has no usable payload.");
+        }
+
+        renderPreviewCanvas(payload, item.label || item.title);
+
+        const details = MODE_DETAILS[item.type] || MODE_DETAILS[state.currentMode] || MODE_DETAILS.url;
+        elements.previewTitle.textContent = item.label || item.title || "QR ready";
+        elements.previewMeta.textContent = item.type === "secure"
+            ? `Protected link ready. Scanning opens ${shortUrlText(item.shareUrl || payload)} and then asks for the pass code.`
+            : details.preview;
+
+        if (item.shareUrl) {
+            elements.previewLinkText.textContent = item.shareUrl;
+            elements.previewLinkWrap.classList.remove("d-none");
+        } else {
+            elements.previewLinkText.textContent = "";
+            elements.previewLinkWrap.classList.add("d-none");
+        }
+
+        updateActionState();
+    }
+
+    function renderPreviewCanvas(payload, label) {
+        state.renderToken += 1;
+        const renderToken = state.renderToken;
         elements.qrcode.innerHTML = "";
-        new QRCode(elements.qrcode, {
-            text: payload,
-            width: QR_SIZE,
-            height: QR_SIZE,
-            colorDark: "#07110c",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M
-        });
+
+        try {
+            new QRCode(elements.qrcode, {
+                text: payload,
+                width: QR_SIZE,
+                height: QR_SIZE,
+                colorDark: "#04110b",
+                colorLight: "#ffffff",
+                correctLevel: payload.length > 512 ? QRCode.CorrectLevel.L : QRCode.CorrectLevel.M
+            });
+        } catch (error) {
+            throw new Error("The QR payload is too large for a single code. Shorten the content or use a shorter link.");
+        }
 
         window.setTimeout(() => {
+            if (renderToken !== state.renderToken) {
+                return;
+            }
+
             const source = elements.qrcode.querySelector("canvas") || elements.qrcode.querySelector("img");
             if (!source) {
+                showAlert(elements.appAlert, "Failed to render the QR preview.", "danger");
+                clearPreview();
                 return;
             }
 
             const finalCanvas = document.createElement("canvas");
             const textLabel = String(label || "").trim();
-            const labelHeight = textLabel ? 42 : 0;
+            const labelHeight = textLabel ? 44 : 0;
             finalCanvas.width = QR_SIZE;
             finalCanvas.height = QR_SIZE + labelHeight;
 
@@ -445,11 +571,11 @@
             context.drawImage(source, 0, 0, QR_SIZE, QR_SIZE);
 
             if (textLabel) {
-                context.fillStyle = "#07110c";
-                context.font = "600 16px sans-serif";
+                context.fillStyle = "#04110b";
+                context.font = "600 16px Segoe UI, sans-serif";
                 context.textAlign = "center";
                 context.textBaseline = "middle";
-                context.fillText(textLabel.slice(0, 34), finalCanvas.width / 2, QR_SIZE + 21);
+                context.fillText(textLabel.slice(0, 34), finalCanvas.width / 2, QR_SIZE + 22);
             }
 
             state.currentCanvas = finalCanvas;
@@ -457,23 +583,29 @@
             elements.qrcode.classList.remove("d-none");
             elements.qrcode.innerHTML = "";
             elements.qrcode.appendChild(finalCanvas);
-            elements.previewTitle.textContent = label || "QR ready";
-        }, 100);
+            updateActionState();
+        }, 80);
     }
 
     function clearPreview() {
+        state.renderToken += 1;
         state.currentCanvas = null;
         state.currentPayload = null;
         elements.qrcode.innerHTML = "";
         elements.qrcode.classList.add("d-none");
         elements.previewEmpty.classList.remove("d-none");
         elements.previewTitle.textContent = "Nothing generated yet";
+        elements.previewMeta.textContent = "Generate a preview, then download, copy, or share it.";
+        elements.previewLinkText.textContent = "";
+        elements.previewLinkWrap.classList.add("d-none");
+        updateActionState();
     }
 
     function resetForm() {
         elements.qrForm.reset();
-        switchMode("url");
+        clearAlert(elements.appAlert);
         clearPreview();
+        switchMode("url");
     }
 
     async function downloadCurrentQr() {
@@ -481,21 +613,26 @@
             showAlert(elements.appAlert, "Generate a QR first.", "danger");
             return;
         }
+
         const link = document.createElement("a");
         link.href = state.currentCanvas.toDataURL("image/png");
-        link.download = "myqrs.png";
+        link.download = `${slugify((state.currentPayload && state.currentPayload.title) || "myqrs") || "myqrs"}.png`;
         link.click();
     }
 
     async function copyCurrentQr() {
         if (!state.currentCanvas || !navigator.clipboard || !window.ClipboardItem) {
-            showAlert(elements.appAlert, "Copy is not supported in this browser.", "danger");
+            showAlert(elements.appAlert, "Image copy is not supported in this browser.", "danger");
             return;
         }
 
-        const blob = await canvasToBlob(state.currentCanvas);
-        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-        showAlert(elements.appAlert, "QR image copied.", "success");
+        try {
+            const blob = await canvasToBlob(state.currentCanvas);
+            await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+            showAlert(elements.appAlert, "QR image copied.", "success");
+        } catch (error) {
+            showAlert(elements.appAlert, error.message || "Failed to copy the QR image.", "danger");
+        }
     }
 
     async function shareCurrentQr() {
@@ -504,25 +641,74 @@
             return;
         }
 
-        const blob = await canvasToBlob(state.currentCanvas);
-        const file = new File([blob], "myqrs.png", { type: "image/png" });
+        const shareUrl = state.currentPayload && state.currentPayload.shareUrl ? state.currentPayload.shareUrl : location.href;
+        const shareTitle = (state.currentPayload && state.currentPayload.title) || "myqrs.me";
 
         try {
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({ title: "myqrs.me", files: [file] });
-            } else {
-                await navigator.share({ title: "myqrs.me", url: location.href });
+            const blob = await canvasToBlob(state.currentCanvas);
+            const file = new File([blob], `${slugify(shareTitle) || "myqrs"}.png`, { type: "image/png" });
+
+            if (canProbablyShareFiles() && navigator.canShare({ files: [file] })) {
+                await navigator.share({ title: shareTitle, text: "QR code generated by myqrs.me", files: [file] });
+                return;
             }
+
+            await navigator.share({ title: shareTitle, text: "Open the QR destination", url: shareUrl });
         } catch (error) {
-            if (error.name !== "AbortError") {
+            if (error && error.name !== "AbortError") {
                 showAlert(elements.appAlert, "Share failed in this browser.", "danger");
             }
         }
     }
 
-    function updateShareAvailability() {
-        const supported = Boolean(navigator.share);
-        elements.shareBtn.hidden = !supported;
+    async function copyPreviewLink() {
+        if (!elements.previewLinkText.textContent) {
+            showAlert(elements.appAlert, "No protected link is available for this preview.", "danger");
+            return;
+        }
+
+        try {
+            await copyText(elements.previewLinkText.textContent);
+            showAlert(elements.appAlert, "Protected link copied.", "success");
+        } catch (error) {
+            showAlert(elements.appAlert, error.message, "danger");
+        }
+    }
+
+    function updateActionState() {
+        const hasCanvas = Boolean(state.currentCanvas);
+        const hasShareLink = Boolean(state.currentPayload && state.currentPayload.shareUrl);
+        const shareSupported = Boolean(navigator.share);
+
+        elements.downloadBtn.disabled = !hasCanvas;
+        elements.copyBtn.disabled = !hasCanvas || !(navigator.clipboard && window.ClipboardItem);
+        elements.copyLinkBtn.disabled = !hasShareLink;
+
+        if (!shareSupported || !hasCanvas) {
+            elements.shareBtn.hidden = true;
+        } else {
+            elements.shareBtn.hidden = false;
+            elements.shareBtn.textContent = hasShareLink || !canProbablyShareFiles() ? "Share Link" : "Share PNG";
+        }
+
+        if (!hasCanvas) {
+            elements.shareHelp.textContent = "Share availability depends on browser support and HTTPS.";
+            return;
+        }
+
+        if (!shareSupported) {
+            elements.shareHelp.textContent = "This browser does not expose the Web Share API here. Download or copy the QR instead.";
+            return;
+        }
+
+        if (!window.isSecureContext) {
+            elements.shareHelp.textContent = "Share support is limited until the site is opened over HTTPS.";
+            return;
+        }
+
+        elements.shareHelp.textContent = canProbablyShareFiles()
+            ? "PNG sharing is available on supported browsers. Others will fall back to sharing the route or page link."
+            : "This browser can share links, but PNG file sharing is limited here.";
     }
 
     async function loadSharedPayload() {
@@ -532,7 +718,10 @@
         try {
             const data = await fetchJson(`/api/shared/${shareId}`);
             state.sharedPayload = data;
-            elements.publicUnlockIntro.textContent = data.title ? `Unlock "${data.title}" with the correct pass code.` : "Enter the code used when this secure QR was created.";
+            elements.publicUnlockIntro.textContent = data.title
+                ? `Unlock "${data.title}" with the correct pass code.`
+                : "Enter the code used when this protected QR was created.";
+
             if (data.hint) {
                 elements.publicUnlockHint.textContent = `Hint: ${data.hint}`;
                 elements.publicUnlockHint.classList.remove("d-none");
@@ -547,6 +736,12 @@
         event.preventDefault();
         elements.publicUnlockError.classList.add("d-none");
         elements.publicUnlockResult.classList.add("d-none");
+
+        if (!state.sharedPayload) {
+            elements.publicUnlockError.textContent = "Protected QR data is unavailable.";
+            elements.publicUnlockError.classList.remove("d-none");
+            return;
+        }
 
         try {
             const message = await decryptSharedPayload(state.sharedPayload, elements.publicUnlockCode.value);
@@ -567,6 +762,7 @@
         showOnly(elements.appView);
         elements.userName.textContent = state.user.name;
         elements.userEmail.textContent = state.user.email;
+        updateActionState();
     }
 
     function showOnly(target) {
@@ -642,9 +838,11 @@
         if (!value) {
             return "";
         }
+
         if (/^[a-zA-Z]+:/.test(value)) {
             return value;
         }
+
         return `https://${value}`;
     }
 
@@ -664,6 +862,23 @@
                 return "Protected QR";
             default:
                 return "QR";
+        }
+    }
+
+    function buildLibraryDescription(item) {
+        if (item.type === "secure" && item.shareUrl) {
+            return `Secure route: ${item.shareUrl}`;
+        }
+
+        return item.label || (item.payload || "").slice(0, 100) || "Stored in your account library";
+    }
+
+    function shortUrlText(value) {
+        try {
+            const url = new URL(value);
+            return `${url.hostname}${url.pathname}`;
+        } catch (_) {
+            return value;
         }
     }
 
@@ -691,6 +906,18 @@
             .replace(/'/g, "&#39;");
     }
 
+    function escapeAttribute(value) {
+        return escapeHtml(value).replace(/`/g, "&#96;");
+    }
+
+    async function copyText(value) {
+        if (!navigator.clipboard) {
+            throw new Error("Clipboard access is not supported in this browser.");
+        }
+
+        await navigator.clipboard.writeText(value);
+    }
+
     function canvasToBlob(canvas) {
         return new Promise((resolve, reject) => {
             canvas.toBlob((blob) => {
@@ -701,6 +928,35 @@
                 }
             }, "image/png");
         });
+    }
+
+    function canProbablyShareFiles() {
+        return Boolean(navigator.share && navigator.canShare && typeof File !== "undefined");
+    }
+
+    function setBusy(button, isBusy, busyText) {
+        if (!button) {
+            return;
+        }
+
+        if (isBusy) {
+            button.dataset.originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = busyText;
+            return;
+        }
+
+        button.disabled = false;
+        button.textContent = busyText || button.dataset.originalText || button.textContent;
+        button.dataset.originalText = button.textContent;
+    }
+
+    function slugify(value) {
+        return String(value || "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .slice(0, 48);
     }
 
     function bytesToBase64(bytes) {
@@ -714,9 +970,11 @@
     function base64ToBytes(base64) {
         const binary = atob(base64);
         const bytes = new Uint8Array(binary.length);
+
         for (let index = 0; index < binary.length; index += 1) {
             bytes[index] = binary.charCodeAt(index);
         }
+
         return bytes;
     }
 

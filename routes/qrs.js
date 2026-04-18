@@ -11,8 +11,19 @@ function requireAuth(req, res, next) {
     return next();
 }
 
-function toPublicQr(item, appBaseUrl) {
-    const secureUrl = item.secure?.shareId ? `${appBaseUrl}/shared/${item.secure.shareId}` : "";
+function resolveBaseUrl(req) {
+    const forwardedProto = req.headers["x-forwarded-proto"];
+    const protocol = forwardedProto ? String(forwardedProto).split(",")[0].trim() : req.protocol;
+    const host = req.get("host");
+    if (host) {
+        return `${protocol}://${host}`;
+    }
+
+    return req.app.locals.appBaseUrl;
+}
+
+function toPublicQr(item, req) {
+    const secureUrl = item.secure?.shareId ? `${resolveBaseUrl(req)}/shared/${item.secure.shareId}` : "";
     return {
         id: item._id.toString(),
         title: item.title,
@@ -40,7 +51,7 @@ router.get("/", async (req, res) => {
         };
 
         return res.json({
-            items: items.map((item) => toPublicQr(item, req.app.locals.appBaseUrl)),
+            items: items.map((item) => toPublicQr(item, req)),
             stats
         });
     } catch (error) {
@@ -88,7 +99,7 @@ router.post("/", async (req, res) => {
         }
 
         const item = await QrItem.create(doc);
-        return res.status(201).json({ item: toPublicQr(item, req.app.locals.appBaseUrl) });
+        return res.status(201).json({ item: toPublicQr(item, req) });
     } catch (error) {
         return res.status(500).json({ message: "Failed to save QR item." });
     }
@@ -104,7 +115,7 @@ router.patch("/:id/favorite", async (req, res) => {
         item.isFavorite = !item.isFavorite;
         await item.save();
 
-        return res.json({ item: toPublicQr(item, req.app.locals.appBaseUrl) });
+        return res.json({ item: toPublicQr(item, req) });
     } catch (error) {
         return res.status(500).json({ message: "Failed to update favorite state." });
     }

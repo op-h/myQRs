@@ -18,7 +18,8 @@ const port = Number(process.env.PORT || 3000);
 const mongoUri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/myqrs";
 const sessionSecret = process.env.SESSION_SECRET || "change-me";
 
-app.locals.appBaseUrl = (process.env.APP_BASE_URL || `http://localhost:${port}`).replace(/\/$/, "");
+app.set("trust proxy", 1);
+app.locals.appBaseUrl = process.env.APP_BASE_URL ? process.env.APP_BASE_URL.replace(/\/$/, "") : "";
 
 mongoose
     .connect(mongoUri)

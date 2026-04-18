@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0f1713">
+    <meta name="theme-color" content="#06110d">
     <title>myqrs.me</title>
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
@@ -14,332 +14,427 @@
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <div class="app-shell container-xxl py-4">
-        <header class="hero-bar mb-4">
-            <div>
-                <p class="eyebrow mb-2">Secure QR Web App</p>
-                <h1 class="hero-title mb-0">myqrs.me</h1>
-            </div>
-            <div class="hero-copy">
-                <p class="mb-0">Registration, login, saved QR history, protected share links, and a Mongo-backed dashboard.</p>
-            </div>
-        </header>
+    <div class="page-grid" aria-hidden="true"></div>
+    <div class="page-noise" aria-hidden="true"></div>
 
-        <section id="publicUnlockView" class="card surface-card d-none">
-            <div class="card-body p-4 p-lg-5">
-                <div class="row g-4 align-items-center">
-                    <div class="col-lg-6">
-                        <p class="eyebrow mb-2">Protected Link</p>
-                        <h2 class="display-6 fw-bold mb-3">Unlock a secure QR message</h2>
-                        <p id="publicUnlockIntro" class="text-body-secondary mb-3">Enter the code used when this secure QR was created.</p>
-                        <div id="publicUnlockHint" class="hint-chip d-none"></div>
+    <main class="shell container-xxl py-3 py-lg-4">
+        <section id="publicUnlockView" class="d-none">
+            <div class="unlock-layout">
+                <div class="surface-panel panel-shell panel-tall">
+                    <div class="panel-tag">SECURE ACCESS</div>
+                    <div class="hero-line"></div>
+                    <h1 class="hero-title">Protected QR unlock</h1>
+                    <p id="publicUnlockIntro" class="hero-copy">
+                        Enter the pass code used when this protected QR was created.
+                    </p>
+                    <div id="publicUnlockHint" class="status-chip d-none"></div>
+                    <div class="stack-list mt-4">
+                        <div class="stack-item">
+                            <span class="stack-dot"></span>
+                            <div>The QR opens a route to this app instead of exposing the secret directly.</div>
+                        </div>
+                        <div class="stack-item">
+                            <span class="stack-dot"></span>
+                            <div>The encrypted content is only revealed after the correct pass code is entered.</div>
+                        </div>
                     </div>
-                    <div class="col-lg-6">
-                        <form id="publicUnlockForm" class="surface-panel p-4 rounded-4">
-                            <div class="mb-3">
-                                <label class="form-label" for="publicUnlockCode">Pass code</label>
-                                <input id="publicUnlockCode" class="form-control form-control-lg" type="password" placeholder="Enter the code">
-                            </div>
-                            <div id="publicUnlockError" class="alert alert-danger d-none mb-3"></div>
-                            <button class="btn btn-success btn-lg w-100" type="submit">Unlock Message</button>
-                        </form>
-                        <div id="publicUnlockResult" class="result-panel mt-3 d-none"></div>
+                </div>
+
+                <div class="surface-panel panel-shell panel-tall">
+                    <div class="section-head">
+                        <div>
+                            <div class="panel-tag">VERIFICATION</div>
+                            <h2 class="section-title">Enter pass code</h2>
+                        </div>
                     </div>
+
+                    <form id="publicUnlockForm" class="form-stack mt-4">
+                        <div>
+                            <label class="form-label" for="publicUnlockCode">Pass code</label>
+                            <input id="publicUnlockCode" class="form-control form-control-lg" type="password" placeholder="Enter the unlock code">
+                        </div>
+                        <div id="publicUnlockError" class="alert alert-danger d-none mb-0"></div>
+                        <button class="btn btn-accent btn-lg w-100" type="submit">Unlock Message</button>
+                    </form>
+
+                    <div id="publicUnlockResult" class="result-panel mt-4 d-none"></div>
                 </div>
             </div>
         </section>
 
-        <section id="authView" class="row g-4">
-            <div class="col-lg-6">
-                <div class="surface-panel p-4 p-lg-5 h-100">
-                    <p class="eyebrow mb-2">QR Platform</p>
-                    <h2 class="display-5 fw-bold mb-3">Build a stronger QR workflow</h2>
-                    <p class="text-body-secondary mb-4">
-                        Save QR codes to your account, protect shared messages with client-side encryption, and manage your
-                        QR library from one dashboard.
-                    </p>
-                    <div class="feature-grid">
-                        <div class="feature-tile">
-                            <h3 class="h6">Auth + sessions</h3>
-                            <p class="mb-0">Register and sign in with secure server-side sessions.</p>
+        <section id="authView">
+            <div class="row g-4 align-items-stretch">
+                <div class="col-xl-7">
+                    <div class="surface-panel panel-shell auth-hero">
+                        <div class="hero-topline">
+                            <span class="panel-tag">THM / QR OPS</span>
+                            <span class="mini-kicker">Designed by OPH</span>
                         </div>
-                        <div class="feature-tile">
-                            <h3 class="h6">Mongo library</h3>
-                            <p class="mb-0">Store favorite QR codes in MongoDB and access them later.</p>
+                        <div class="hero-glitch-wrap">
+                            <h1 class="brand-mark" data-text="myqrs.me">myqrs.me</h1>
                         </div>
-                        <div class="feature-tile">
-                            <h3 class="h6">Protected links</h3>
-                            <p class="mb-0">Short encrypted share URLs backed by the database.</p>
+                        <p class="hero-copy">
+                            Tactical QR creation for links, text, WiFi access, contact cards, email actions, and protected share flows.
+                            Cleaner structure, sharper visuals, and stronger secure-link handling are built into the app shell.
+                        </p>
+
+                        <div class="hero-metrics">
+                            <article class="metric-card">
+                                <span class="metric-label">STACK</span>
+                                <strong>HTML / CSS / JS / Node</strong>
+                            </article>
+                            <article class="metric-card">
+                                <span class="metric-label">TARGET</span>
+                                <strong>Desktop + Mobile</strong>
+                            </article>
+                            <article class="metric-card">
+                                <span class="metric-label">MODE</span>
+                                <strong>Stored + Protected QR</strong>
+                            </article>
                         </div>
-                        <div class="feature-tile">
-                            <h3 class="h6">Ready for production</h3>
-                            <p class="mb-0">Node.js, Express, MongoDB, and a DigitalOcean deployment path.</p>
+
+                        <div class="ops-grid">
+                            <article class="ops-card">
+                                <span class="ops-index">01</span>
+                                <h3>Secure share routes</h3>
+                                <p>Protected QRs point to a real app route so users land on the unlock screen first.</p>
+                            </article>
+                            <article class="ops-card">
+                                <span class="ops-index">02</span>
+                                <h3>Account library</h3>
+                                <p>Users keep saved QR assets, favorites, and reusable items tied to their own account.</p>
+                            </article>
+                            <article class="ops-card">
+                                <span class="ops-index">03</span>
+                                <h3>Cleaner operator flow</h3>
+                                <p>Generate, preview, export, and reuse from one responsive workspace instead of disconnected screens.</p>
+                            </article>
+                            <article class="ops-card">
+                                <span class="ops-index">04</span>
+                                <h3>Deployment ready</h3>
+                                <p>Structured for real hosting with Express, MongoDB, Nginx, HTTPS, and a custom domain.</p>
+                            </article>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="surface-panel p-4 p-lg-5">
-                    <ul class="nav nav-pills auth-tabs mb-4" id="authTabs">
-                        <li class="nav-item flex-fill">
-                            <button class="nav-link active w-100" type="button" data-auth-tab="login">Login</button>
-                        </li>
-                        <li class="nav-item flex-fill">
-                            <button class="nav-link w-100" type="button" data-auth-tab="register">Register</button>
-                        </li>
-                    </ul>
 
-                    <div id="authAlert" class="alert d-none mb-4"></div>
+                <div class="col-xl-5">
+                    <div class="surface-panel panel-shell auth-panel">
+                        <div class="section-head">
+                            <div>
+                                <div class="panel-tag">AUTHENTICATION</div>
+                                <h2 class="section-title">Access your workspace</h2>
+                            </div>
+                        </div>
 
-                    <form id="loginForm" class="auth-form">
-                        <div class="mb-3">
-                            <label class="form-label" for="loginEmail">Email</label>
-                            <input id="loginEmail" class="form-control" type="email" placeholder="name@example.com" autocomplete="email">
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label" for="loginPassword">Password</label>
-                            <input id="loginPassword" class="form-control" type="password" placeholder="Enter your password" autocomplete="current-password">
-                        </div>
-                        <button class="btn btn-success btn-lg w-100" type="submit">Sign In</button>
-                    </form>
+                        <ul class="nav auth-tabs mb-4">
+                            <li class="nav-item flex-fill">
+                                <button class="nav-link active w-100" type="button" data-auth-tab="login">Login</button>
+                            </li>
+                            <li class="nav-item flex-fill">
+                                <button class="nav-link w-100" type="button" data-auth-tab="register">Register</button>
+                            </li>
+                        </ul>
 
-                    <form id="registerForm" class="auth-form d-none">
-                        <div class="mb-3">
-                            <label class="form-label" for="registerName">Full name</label>
-                            <input id="registerName" class="form-control" type="text" placeholder="Your name" autocomplete="name">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="registerEmail">Email</label>
-                            <input id="registerEmail" class="form-control" type="email" placeholder="name@example.com" autocomplete="email">
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label" for="registerPassword">Password</label>
-                            <input id="registerPassword" class="form-control" type="password" placeholder="At least 8 characters" autocomplete="new-password">
-                        </div>
-                        <button class="btn btn-success btn-lg w-100" type="submit">Create Account</button>
-                    </form>
+                        <div id="authAlert" class="alert d-none mb-4"></div>
+
+                        <form id="loginForm" class="form-stack">
+                            <div>
+                                <label class="form-label" for="loginEmail">Email</label>
+                                <input id="loginEmail" class="form-control" type="email" placeholder="name@example.com" autocomplete="email">
+                            </div>
+                            <div>
+                                <label class="form-label" for="loginPassword">Password</label>
+                                <input id="loginPassword" class="form-control" type="password" placeholder="Enter your password" autocomplete="current-password">
+                            </div>
+                            <button class="btn btn-accent btn-lg w-100" type="submit">Sign In</button>
+                        </form>
+
+                        <form id="registerForm" class="form-stack d-none">
+                            <div>
+                                <label class="form-label" for="registerName">Full name</label>
+                                <input id="registerName" class="form-control" type="text" placeholder="Your full name" autocomplete="name">
+                            </div>
+                            <div>
+                                <label class="form-label" for="registerEmail">Email</label>
+                                <input id="registerEmail" class="form-control" type="email" placeholder="name@example.com" autocomplete="email">
+                            </div>
+                            <div>
+                                <label class="form-label" for="registerPassword">Password</label>
+                                <input id="registerPassword" class="form-control" type="password" placeholder="At least 8 characters" autocomplete="new-password">
+                            </div>
+                            <button class="btn btn-accent btn-lg w-100" type="submit">Create Account</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </section>
 
         <section id="appView" class="d-none">
-            <div class="dashboard-top mb-4">
-                <div>
-                    <p class="eyebrow mb-2">Dashboard</p>
-                    <h2 class="fw-bold mb-1">Welcome back, <span id="userName">User</span></h2>
-                    <p class="text-body-secondary mb-0">Manage QR campaigns, secure links, and your saved library.</p>
-                </div>
-                <div class="d-flex gap-2 align-items-center">
-                    <span id="userEmail" class="badge text-bg-dark px-3 py-2"></span>
-                    <button id="logoutBtn" class="btn btn-outline-light" type="button">Logout</button>
-                </div>
-            </div>
+            <div class="workspace-grid">
+                <aside class="workspace-rail">
+                    <div class="surface-panel panel-shell command-panel">
+                        <div class="hero-topline">
+                            <span class="panel-tag">COMMAND</span>
+                            <span class="mini-kicker">Designed by OPH</span>
+                        </div>
+                        <h1 class="workspace-brand" data-text="myqrs.me">myqrs.me</h1>
+                        <p class="hero-copy">
+                            Build QR payloads, manage protected routes, and operate your saved library from one hardened workspace.
+                        </p>
 
-            <div class="row g-3 mb-4" id="statsGrid">
-                <div class="col-md-4">
-                    <div class="stat-card">
-                        <span class="stat-label">Total QRs</span>
-                        <strong id="statTotal">0</strong>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card">
-                        <span class="stat-label">Protected Links</span>
-                        <strong id="statProtected">0</strong>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card">
-                        <span class="stat-label">Favorites</span>
-                        <strong id="statFavorites">0</strong>
-                    </div>
-                </div>
-            </div>
-
-            <div id="appAlert" class="alert d-none mb-4"></div>
-
-            <div class="row g-4">
-                <div class="col-xl-5">
-                    <div class="surface-panel p-4 h-100">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <p class="eyebrow mb-2">Generator</p>
-                                <h3 class="h2 mb-0">Create a QR</h3>
+                        <div class="identity-block">
+                            <div class="identity-line">
+                                <span class="identity-label">OPERATOR</span>
+                                <strong id="userName">User</strong>
                             </div>
-                            <button id="clearFormBtn" class="btn btn-outline-light" type="button">Reset</button>
+                            <div class="identity-line">
+                                <span class="identity-label">SESSION</span>
+                                <span id="userEmail" class="identity-value"></span>
+                            </div>
                         </div>
 
-                        <form id="qrForm">
-                            <div class="mb-3">
-                                <label class="form-label" for="titleInput">Title</label>
-                                <input id="titleInput" class="form-control" type="text" placeholder="Example: Team onboarding link">
-                            </div>
+                        <div class="quick-stats">
+                            <article class="stat-card">
+                                <span class="stat-label">TOTAL</span>
+                                <strong id="statTotal">0</strong>
+                            </article>
+                            <article class="stat-card">
+                                <span class="stat-label">PROTECTED</span>
+                                <strong id="statProtected">0</strong>
+                            </article>
+                            <article class="stat-card">
+                                <span class="stat-label">FAVORITES</span>
+                                <strong id="statFavorites">0</strong>
+                            </article>
+                        </div>
 
-                            <div class="mb-3">
-                                <label class="form-label d-block">Mode</label>
-                                <div class="mode-tabs" id="modeTabs">
-                                    <button class="btn btn-sm btn-mode active" type="button" data-mode="url">URL</button>
-                                    <button class="btn btn-sm btn-mode" type="button" data-mode="text">Text</button>
-                                    <button class="btn btn-sm btn-mode" type="button" data-mode="wifi">WiFi</button>
-                                    <button class="btn btn-sm btn-mode" type="button" data-mode="contact">Contact</button>
-                                    <button class="btn btn-sm btn-mode" type="button" data-mode="email">Email</button>
-                                    <button class="btn btn-sm btn-mode" type="button" data-mode="secure">Protected</button>
+                        <button id="logoutBtn" class="btn btn-ghost w-100 mt-3" type="button">Logout</button>
+                    </div>
+
+                    <div class="surface-panel panel-shell intel-panel">
+                        <div class="section-head">
+                            <div>
+                                <div class="panel-tag">GUIDE</div>
+                                <h2 class="section-title">Operator notes</h2>
+                            </div>
+                        </div>
+                        <div class="stack-list mt-3">
+                            <div class="stack-item">
+                                <span class="stack-dot"></span>
+                                <div>Protected mode creates an app link that opens a pass-code prompt before revealing the message.</div>
+                            </div>
+                            <div class="stack-item">
+                                <span class="stack-dot"></span>
+                                <div>Shorter labels improve scanability in both the preview card and the saved library.</div>
+                            </div>
+                            <div class="stack-item">
+                                <span class="stack-dot"></span>
+                                <div>Use favorites for high-value QR assets that need fast access later.</div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="workspace-main">
+                    <div id="appAlert" class="alert d-none mb-4"></div>
+
+                    <div class="main-panels">
+                        <section class="surface-panel panel-shell generator-panel">
+                            <div class="section-head">
+                                <div>
+                                    <div class="panel-tag">GENERATOR</div>
+                                    <h2 class="section-title">Build a QR payload</h2>
+                                    <p id="modeSummary" class="section-copy mb-0">Generate quick links, saved assets, and protected share routes.</p>
+                                </div>
+                                <div class="section-actions">
+                                    <span id="modeBadge" class="status-chip">URL MODE</span>
+                                    <button id="clearFormBtn" class="btn btn-ghost btn-sm" type="button">Reset</button>
                                 </div>
                             </div>
 
-                            <div class="mode-section" data-section="url">
-                                <div class="mb-3">
+                            <form id="qrForm" class="form-stack mt-4">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label" for="titleInput">Title</label>
+                                        <input id="titleInput" class="form-control" type="text" placeholder="Example: Team onboarding portal">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="customLabelInput">Label under QR</label>
+                                        <input id="customLabelInput" class="form-control" type="text" placeholder="Optional short label">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="form-label d-block">Mode</label>
+                                    <div class="mode-tabs">
+                                        <button class="btn btn-mode active" type="button" data-mode="url">URL</button>
+                                        <button class="btn btn-mode" type="button" data-mode="text">Text</button>
+                                        <button class="btn btn-mode" type="button" data-mode="wifi">WiFi</button>
+                                        <button class="btn btn-mode" type="button" data-mode="contact">Contact</button>
+                                        <button class="btn btn-mode" type="button" data-mode="email">Email</button>
+                                        <button class="btn btn-mode btn-mode-critical" type="button" data-mode="secure">Protected</button>
+                                    </div>
+                                </div>
+
+                                <div class="mode-section" data-section="url">
                                     <label class="form-label" for="urlInput">Website URL</label>
                                     <input id="urlInput" class="form-control" type="url" placeholder="https://example.com">
                                 </div>
-                            </div>
 
-                            <div class="mode-section d-none" data-section="text">
-                                <div class="mb-3">
+                                <div class="mode-section d-none" data-section="text">
                                     <label class="form-label" for="textInput">Text content</label>
-                                    <textarea id="textInput" class="form-control" rows="5" placeholder="Paste a message or note"></textarea>
+                                    <textarea id="textInput" class="form-control" rows="5" placeholder="Paste text, notes, or instructions"></textarea>
                                 </div>
-                            </div>
 
-                            <div class="mode-section d-none" data-section="wifi">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label" for="ssidInput">Network name</label>
-                                        <input id="ssidInput" class="form-control" type="text" placeholder="Office WiFi">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label" for="passwordInput">Password</label>
-                                        <input id="passwordInput" class="form-control" type="password" placeholder="Password">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label" for="encryptionSelect">Security</label>
-                                        <select id="encryptionSelect" class="form-select">
-                                            <option value="WPA">WPA/WPA2</option>
-                                            <option value="WEP">WEP</option>
-                                            <option value="nopass">None</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label" for="hiddenCheckbox">Hidden network</label>
-                                        <div class="form-check pt-2">
-                                            <input id="hiddenCheckbox" class="form-check-input" type="checkbox">
-                                            <label class="form-check-label" for="hiddenCheckbox">Mark as hidden</label>
+                                <div class="mode-section d-none" data-section="wifi">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="ssidInput">Network name</label>
+                                            <input id="ssidInput" class="form-control" type="text" placeholder="Office WiFi">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="passwordInput">Password</label>
+                                            <input id="passwordInput" class="form-control" type="password" placeholder="Password">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="encryptionSelect">Security</label>
+                                            <select id="encryptionSelect" class="form-select">
+                                                <option value="WPA">WPA/WPA2</option>
+                                                <option value="WEP">WEP</option>
+                                                <option value="nopass">None</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label d-block" for="hiddenCheckbox">Hidden network</label>
+                                            <div class="form-check check-block">
+                                                <input id="hiddenCheckbox" class="form-check-input" type="checkbox">
+                                                <label class="form-check-label" for="hiddenCheckbox">Mark as hidden</label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="mode-section d-none" data-section="contact">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label" for="nameInput">Full name</label>
-                                        <input id="nameInput" class="form-control" type="text" placeholder="John Doe">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label" for="phoneInput">Phone</label>
-                                        <input id="phoneInput" class="form-control" type="tel" placeholder="+11234567890">
+                                <div class="mode-section d-none" data-section="contact">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="nameInput">Full name</label>
+                                            <input id="nameInput" class="form-control" type="text" placeholder="John Doe">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="phoneInput">Phone</label>
+                                            <input id="phoneInput" class="form-control" type="tel" placeholder="+11234567890">
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="mode-section d-none" data-section="email">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label" for="emailToInput">To</label>
-                                        <input id="emailToInput" class="form-control" type="email" placeholder="name@example.com">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label" for="emailSubjectInput">Subject</label>
-                                        <input id="emailSubjectInput" class="form-control" type="text" placeholder="Subject">
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label" for="emailBodyInput">Body</label>
-                                        <textarea id="emailBodyInput" class="form-control" rows="4" placeholder="Optional email body"></textarea>
+                                <div class="mode-section d-none" data-section="email">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="emailToInput">To</label>
+                                            <input id="emailToInput" class="form-control" type="email" placeholder="name@example.com">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="emailSubjectInput">Subject</label>
+                                            <input id="emailSubjectInput" class="form-control" type="text" placeholder="Subject">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label" for="emailBodyInput">Body</label>
+                                            <textarea id="emailBodyInput" class="form-control" rows="4" placeholder="Optional email body"></textarea>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="mode-section d-none" data-section="secure">
-                                <div class="mb-3">
-                                    <label class="form-label" for="secureMessageInput">Secret message</label>
-                                    <textarea id="secureMessageInput" class="form-control" rows="5" placeholder="This text is encrypted in the browser before it is saved"></textarea>
-                                </div>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label" for="secureCodeInput">Pass code</label>
-                                        <input id="secureCodeInput" class="form-control" type="password" placeholder="Enter a pass code">
+                                <div class="mode-section d-none" data-section="secure">
+                                    <div class="secure-banner">
+                                        <div class="banner-led"></div>
+                                        <div>
+                                            <strong>Protected QR route</strong>
+                                            <p class="mb-0">The QR stores a short app link. Users scan it, land on the unlock screen, then enter the pass code to reveal the encrypted message.</p>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label" for="secureHintInput">Hint</label>
-                                        <input id="secureHintInput" class="form-control" type="text" placeholder="Optional hint">
+                                    <div class="mt-3">
+                                        <label class="form-label" for="secureMessageInput">Secret message</label>
+                                        <textarea id="secureMessageInput" class="form-control" rows="5" placeholder="This content is encrypted before it is stored"></textarea>
+                                    </div>
+                                    <div class="row g-3 mt-1">
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="secureCodeInput">Pass code</label>
+                                            <input id="secureCodeInput" class="form-control" type="password" placeholder="Minimum 4 characters">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="secureHintInput">Hint</label>
+                                            <input id="secureHintInput" class="form-control" type="text" placeholder="Optional hint">
+                                        </div>
+                                    </div>
+                                    <div id="secureStatus" class="status-line mt-3">
+                                        Protected mode creates and saves the item immediately after encryption.
                                     </div>
                                 </div>
-                                <div class="form-text mt-2">
-                                    Protected QR links are stored as encrypted blobs in MongoDB and shared through short links.
-                                </div>
-                            </div>
 
-                            <div class="row g-3 mt-1">
-                                <div class="col-md-6">
-                                    <label class="form-label" for="customLabelInput">Label under QR</label>
-                                    <input id="customLabelInput" class="form-control" type="text" placeholder="Optional label">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label" for="favoriteCheckbox">Favorite on save</label>
-                                    <div class="form-check pt-2">
+                                <div class="generator-footer">
+                                    <div class="form-check check-block">
                                         <input id="favoriteCheckbox" class="form-check-input" type="checkbox">
                                         <label class="form-check-label" for="favoriteCheckbox">Mark as favorite</label>
                                     </div>
+
+                                    <div class="button-stack">
+                                        <button id="generateBtn" class="btn btn-accent btn-lg" type="submit">Generate Preview</button>
+                                        <button id="saveBtn" class="btn btn-ghost btn-lg" type="button">Save To Library</button>
+                                    </div>
                                 </div>
+                            </form>
+                        </section>
+
+                        <section class="surface-panel panel-shell preview-panel">
+                            <div class="section-head">
+                                <div>
+                                    <div class="panel-tag">PREVIEW</div>
+                                    <h2 class="section-title">Export-ready output</h2>
+                                    <p id="previewMeta" class="section-copy mb-0">Generate a preview, then download, copy, or share it.</p>
+                                </div>
+                                <span id="previewTitle" class="status-chip muted-chip">Nothing generated yet</span>
                             </div>
 
-                            <div class="d-grid gap-2 d-md-flex mt-4">
-                                <button id="generateBtn" class="btn btn-success btn-lg flex-fill" type="submit">Generate Preview</button>
-                                <button id="saveBtn" class="btn btn-outline-light btn-lg flex-fill" type="button">Save To Library</button>
+                            <div class="preview-stage mt-4" id="previewFrame">
+                                <div class="preview-empty" id="previewEmpty">
+                                    <div class="empty-mark">QR</div>
+                                    <strong>No QR generated yet</strong>
+                                    <span>Create one from the generator panel to render it here.</span>
+                                </div>
+                                <div id="qrcode" class="d-none"></div>
                             </div>
-                        </form>
+
+                            <div id="previewLinkWrap" class="preview-link d-none mt-4">
+                                <span class="preview-link-label">Protected link</span>
+                                <code id="previewLinkText"></code>
+                                <button id="copyLinkBtn" class="btn btn-ghost btn-sm" type="button">Copy Link</button>
+                            </div>
+
+                            <div class="action-row mt-4">
+                                <button id="downloadBtn" class="btn btn-accent" type="button">Download PNG</button>
+                                <button id="copyBtn" class="btn btn-ghost" type="button">Copy Image</button>
+                                <button id="shareBtn" class="btn btn-ghost" type="button">Share</button>
+                            </div>
+                            <div id="shareHelp" class="status-line mt-3">Share availability depends on browser support and HTTPS.</div>
+                        </section>
                     </div>
-                </div>
 
-                <div class="col-xl-7">
-                    <div class="surface-panel p-4 h-100">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
+                    <section class="surface-panel panel-shell library-panel mt-4">
+                        <div class="section-head">
                             <div>
-                                <p class="eyebrow mb-2">Preview</p>
-                                <h3 class="h2 mb-0">Export-ready QR</h3>
+                                <div class="panel-tag">LIBRARY</div>
+                                <h2 class="section-title">Saved QR items</h2>
+                                <p class="section-copy mb-0">Stored account records with quick preview, favorites, and secure-link reuse.</p>
                             </div>
-                            <span id="previewTitle" class="badge text-bg-dark px-3 py-2">Nothing generated yet</span>
+                            <span id="libraryCount" class="status-chip muted-chip">0 items</span>
                         </div>
-
-                        <div class="preview-frame mb-4" id="previewFrame">
-                            <div class="preview-empty" id="previewEmpty">
-                                <strong>No QR generated yet</strong>
-                                <span>Use the generator to create a preview or save a protected link.</span>
-                            </div>
-                            <div id="qrcode" class="d-none"></div>
-                        </div>
-
-                        <div class="d-grid gap-2 d-md-flex">
-                            <button id="downloadBtn" class="btn btn-success flex-fill" type="button">Download PNG</button>
-                            <button id="copyBtn" class="btn btn-outline-light flex-fill" type="button">Copy Image</button>
-                            <button id="shareBtn" class="btn btn-outline-light flex-fill" type="button">Share</button>
-                        </div>
-                    </div>
+                        <div id="libraryGrid" class="row g-3 mt-1"></div>
+                    </section>
                 </div>
-            </div>
-
-            <div class="surface-panel p-4 mt-4">
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <div>
-                        <p class="eyebrow mb-2">Library</p>
-                        <h3 class="h2 mb-0">Saved QR items</h3>
-                    </div>
-                    <span class="text-body-secondary">Mongo-backed records for your account</span>
-                </div>
-                <div id="libraryGrid" class="row g-3"></div>
             </div>
         </section>
-    </div>
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="/qrcode.min.js"></script>
