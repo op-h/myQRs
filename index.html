@@ -3,232 +3,347 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#101714">
+    <meta name="theme-color" content="#0f1713">
     <title>myqrs.me</title>
-    <link rel="stylesheet" href="./styles.css">
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+        integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr"
+        crossorigin="anonymous"
+    >
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <div class="app-shell">
-        <main class="workspace-grid">
-            <section class="control-panel surface">
-                <div class="designer-mark">Designed by OPH</div>
-                <div class="panel-head">
+    <div class="app-shell container-xxl py-4">
+        <header class="hero-bar mb-4">
+            <div>
+                <p class="eyebrow mb-2">Secure QR Web App</p>
+                <h1 class="hero-title mb-0">myqrs.me</h1>
+            </div>
+            <div class="hero-copy">
+                <p class="mb-0">Registration, login, saved QR history, protected share links, and a Mongo-backed dashboard.</p>
+            </div>
+        </header>
+
+        <section id="publicUnlockView" class="card surface-card d-none">
+            <div class="card-body p-4 p-lg-5">
+                <div class="row g-4 align-items-center">
+                    <div class="col-lg-6">
+                        <p class="eyebrow mb-2">Protected Link</p>
+                        <h2 class="display-6 fw-bold mb-3">Unlock a secure QR message</h2>
+                        <p id="publicUnlockIntro" class="text-body-secondary mb-3">Enter the code used when this secure QR was created.</p>
+                        <div id="publicUnlockHint" class="hint-chip d-none"></div>
+                    </div>
+                    <div class="col-lg-6">
+                        <form id="publicUnlockForm" class="surface-panel p-4 rounded-4">
+                            <div class="mb-3">
+                                <label class="form-label" for="publicUnlockCode">Pass code</label>
+                                <input id="publicUnlockCode" class="form-control form-control-lg" type="password" placeholder="Enter the code">
+                            </div>
+                            <div id="publicUnlockError" class="alert alert-danger d-none mb-3"></div>
+                            <button class="btn btn-success btn-lg w-100" type="submit">Unlock Message</button>
+                        </form>
+                        <div id="publicUnlockResult" class="result-panel mt-3 d-none"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="authView" class="row g-4">
+            <div class="col-lg-6">
+                <div class="surface-panel p-4 p-lg-5 h-100">
+                    <p class="eyebrow mb-2">QR Platform</p>
+                    <h2 class="display-5 fw-bold mb-3">Build a stronger QR workflow</h2>
+                    <p class="text-body-secondary mb-4">
+                        Save QR codes to your account, protect shared messages with client-side encryption, and manage your
+                        QR library from one dashboard.
+                    </p>
+                    <div class="feature-grid">
+                        <div class="feature-tile">
+                            <h3 class="h6">Auth + sessions</h3>
+                            <p class="mb-0">Register and sign in with secure server-side sessions.</p>
+                        </div>
+                        <div class="feature-tile">
+                            <h3 class="h6">Mongo library</h3>
+                            <p class="mb-0">Store favorite QR codes in MongoDB and access them later.</p>
+                        </div>
+                        <div class="feature-tile">
+                            <h3 class="h6">Protected links</h3>
+                            <p class="mb-0">Short encrypted share URLs backed by the database.</p>
+                        </div>
+                        <div class="feature-tile">
+                            <h3 class="h6">Ready for production</h3>
+                            <p class="mb-0">Node.js, Express, MongoDB, and a DigitalOcean deployment path.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="surface-panel p-4 p-lg-5">
+                    <ul class="nav nav-pills auth-tabs mb-4" id="authTabs">
+                        <li class="nav-item flex-fill">
+                            <button class="nav-link active w-100" type="button" data-auth-tab="login">Login</button>
+                        </li>
+                        <li class="nav-item flex-fill">
+                            <button class="nav-link w-100" type="button" data-auth-tab="register">Register</button>
+                        </li>
+                    </ul>
+
+                    <div id="authAlert" class="alert d-none mb-4"></div>
+
+                    <form id="loginForm" class="auth-form">
+                        <div class="mb-3">
+                            <label class="form-label" for="loginEmail">Email</label>
+                            <input id="loginEmail" class="form-control" type="email" placeholder="name@example.com" autocomplete="email">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label" for="loginPassword">Password</label>
+                            <input id="loginPassword" class="form-control" type="password" placeholder="Enter your password" autocomplete="current-password">
+                        </div>
+                        <button class="btn btn-success btn-lg w-100" type="submit">Sign In</button>
+                    </form>
+
+                    <form id="registerForm" class="auth-form d-none">
+                        <div class="mb-3">
+                            <label class="form-label" for="registerName">Full name</label>
+                            <input id="registerName" class="form-control" type="text" placeholder="Your name" autocomplete="name">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="registerEmail">Email</label>
+                            <input id="registerEmail" class="form-control" type="email" placeholder="name@example.com" autocomplete="email">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label" for="registerPassword">Password</label>
+                            <input id="registerPassword" class="form-control" type="password" placeholder="At least 8 characters" autocomplete="new-password">
+                        </div>
+                        <button class="btn btn-success btn-lg w-100" type="submit">Create Account</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="appView" class="d-none">
+            <div class="dashboard-top mb-4">
+                <div>
+                    <p class="eyebrow mb-2">Dashboard</p>
+                    <h2 class="fw-bold mb-1">Welcome back, <span id="userName">User</span></h2>
+                    <p class="text-body-secondary mb-0">Manage QR campaigns, secure links, and your saved library.</p>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <span id="userEmail" class="badge text-bg-dark px-3 py-2"></span>
+                    <button id="logoutBtn" class="btn btn-outline-light" type="button">Logout</button>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4" id="statsGrid">
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <span class="stat-label">Total QRs</span>
+                        <strong id="statTotal">0</strong>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <span class="stat-label">Protected Links</span>
+                        <strong id="statProtected">0</strong>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <span class="stat-label">Favorites</span>
+                        <strong id="statFavorites">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div id="appAlert" class="alert d-none mb-4"></div>
+
+            <div class="row g-4">
+                <div class="col-xl-5">
+                    <div class="surface-panel p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <p class="eyebrow mb-2">Generator</p>
+                                <h3 class="h2 mb-0">Create a QR</h3>
+                            </div>
+                            <button id="clearFormBtn" class="btn btn-outline-light" type="button">Reset</button>
+                        </div>
+
+                        <form id="qrForm">
+                            <div class="mb-3">
+                                <label class="form-label" for="titleInput">Title</label>
+                                <input id="titleInput" class="form-control" type="text" placeholder="Example: Team onboarding link">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label d-block">Mode</label>
+                                <div class="mode-tabs" id="modeTabs">
+                                    <button class="btn btn-sm btn-mode active" type="button" data-mode="url">URL</button>
+                                    <button class="btn btn-sm btn-mode" type="button" data-mode="text">Text</button>
+                                    <button class="btn btn-sm btn-mode" type="button" data-mode="wifi">WiFi</button>
+                                    <button class="btn btn-sm btn-mode" type="button" data-mode="contact">Contact</button>
+                                    <button class="btn btn-sm btn-mode" type="button" data-mode="email">Email</button>
+                                    <button class="btn btn-sm btn-mode" type="button" data-mode="secure">Protected</button>
+                                </div>
+                            </div>
+
+                            <div class="mode-section" data-section="url">
+                                <div class="mb-3">
+                                    <label class="form-label" for="urlInput">Website URL</label>
+                                    <input id="urlInput" class="form-control" type="url" placeholder="https://example.com">
+                                </div>
+                            </div>
+
+                            <div class="mode-section d-none" data-section="text">
+                                <div class="mb-3">
+                                    <label class="form-label" for="textInput">Text content</label>
+                                    <textarea id="textInput" class="form-control" rows="5" placeholder="Paste a message or note"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="mode-section d-none" data-section="wifi">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="ssidInput">Network name</label>
+                                        <input id="ssidInput" class="form-control" type="text" placeholder="Office WiFi">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="passwordInput">Password</label>
+                                        <input id="passwordInput" class="form-control" type="password" placeholder="Password">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="encryptionSelect">Security</label>
+                                        <select id="encryptionSelect" class="form-select">
+                                            <option value="WPA">WPA/WPA2</option>
+                                            <option value="WEP">WEP</option>
+                                            <option value="nopass">None</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="hiddenCheckbox">Hidden network</label>
+                                        <div class="form-check pt-2">
+                                            <input id="hiddenCheckbox" class="form-check-input" type="checkbox">
+                                            <label class="form-check-label" for="hiddenCheckbox">Mark as hidden</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mode-section d-none" data-section="contact">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="nameInput">Full name</label>
+                                        <input id="nameInput" class="form-control" type="text" placeholder="John Doe">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="phoneInput">Phone</label>
+                                        <input id="phoneInput" class="form-control" type="tel" placeholder="+11234567890">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mode-section d-none" data-section="email">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="emailToInput">To</label>
+                                        <input id="emailToInput" class="form-control" type="email" placeholder="name@example.com">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="emailSubjectInput">Subject</label>
+                                        <input id="emailSubjectInput" class="form-control" type="text" placeholder="Subject">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="emailBodyInput">Body</label>
+                                        <textarea id="emailBodyInput" class="form-control" rows="4" placeholder="Optional email body"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mode-section d-none" data-section="secure">
+                                <div class="mb-3">
+                                    <label class="form-label" for="secureMessageInput">Secret message</label>
+                                    <textarea id="secureMessageInput" class="form-control" rows="5" placeholder="This text is encrypted in the browser before it is saved"></textarea>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="secureCodeInput">Pass code</label>
+                                        <input id="secureCodeInput" class="form-control" type="password" placeholder="Enter a pass code">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="secureHintInput">Hint</label>
+                                        <input id="secureHintInput" class="form-control" type="text" placeholder="Optional hint">
+                                    </div>
+                                </div>
+                                <div class="form-text mt-2">
+                                    Protected QR links are stored as encrypted blobs in MongoDB and shared through short links.
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mt-1">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="customLabelInput">Label under QR</label>
+                                    <input id="customLabelInput" class="form-control" type="text" placeholder="Optional label">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="favoriteCheckbox">Favorite on save</label>
+                                    <div class="form-check pt-2">
+                                        <input id="favoriteCheckbox" class="form-check-input" type="checkbox">
+                                        <label class="form-check-label" for="favoriteCheckbox">Mark as favorite</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex mt-4">
+                                <button id="generateBtn" class="btn btn-success btn-lg flex-fill" type="submit">Generate Preview</button>
+                                <button id="saveBtn" class="btn btn-outline-light btn-lg flex-fill" type="button">Save To Library</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-xl-7">
+                    <div class="surface-panel p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <p class="eyebrow mb-2">Preview</p>
+                                <h3 class="h2 mb-0">Export-ready QR</h3>
+                            </div>
+                            <span id="previewTitle" class="badge text-bg-dark px-3 py-2">Nothing generated yet</span>
+                        </div>
+
+                        <div class="preview-frame mb-4" id="previewFrame">
+                            <div class="preview-empty" id="previewEmpty">
+                                <strong>No QR generated yet</strong>
+                                <span>Use the generator to create a preview or save a protected link.</span>
+                            </div>
+                            <div id="qrcode" class="d-none"></div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex">
+                            <button id="downloadBtn" class="btn btn-success flex-fill" type="button">Download PNG</button>
+                            <button id="copyBtn" class="btn btn-outline-light flex-fill" type="button">Copy Image</button>
+                            <button id="shareBtn" class="btn btn-outline-light flex-fill" type="button">Share</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="surface-panel p-4 mt-4">
+                <div class="d-flex justify-content-between align-items-start mb-4">
                     <div>
-                        <p class="section-kicker">Generator</p>
-                        <h2>Build QR codes</h2>
+                        <p class="eyebrow mb-2">Library</p>
+                        <h3 class="h2 mb-0">Saved QR items</h3>
                     </div>
-                    <button id="clearFormBtn" class="ghost-btn" type="button">Reset</button>
+                    <span class="text-body-secondary">Mongo-backed records for your account</span>
                 </div>
-
-                <nav class="tab-grid" aria-label="QR modes">
-                    <button class="tab-btn is-active" data-mode="url" type="button">URL</button>
-                    <button class="tab-btn" data-mode="text" type="button">Text</button>
-                    <button class="tab-btn" data-mode="wifi" type="button">WiFi</button>
-                    <button class="tab-btn" data-mode="contact" type="button">Contact</button>
-                    <button class="tab-btn" data-mode="email" type="button">Email</button>
-                    <button class="tab-btn" data-mode="secure" type="button">Protected</button>
-                </nav>
-
-                <form id="qrForm" novalidate>
-                    <section class="mode-panel is-active" data-section="url">
-                        <label class="field">
-                            <span>Website URL</span>
-                            <input id="urlInput" class="input" type="url" placeholder="https://example.com" autocomplete="url">
-                            <small class="field-error" id="urlError"></small>
-                        </label>
-                    </section>
-
-                    <section class="mode-panel" data-section="text">
-                        <label class="field">
-                            <span>Plain text</span>
-                            <textarea id="textInput" class="input" rows="5" placeholder="Paste text, notes, or instructions"></textarea>
-                            <small class="field-error" id="textError"></small>
-                        </label>
-                    </section>
-
-                    <section class="mode-panel" data-section="wifi">
-                        <div class="field-grid">
-                            <label class="field">
-                                <span>Network name</span>
-                                <input id="ssidInput" class="input" type="text" placeholder="Office-WiFi">
-                                <small class="field-error" id="ssidError"></small>
-                            </label>
-                            <label class="field">
-                                <span>Password</span>
-                                <input id="passwordInput" class="input" type="password" placeholder="Password">
-                            </label>
-                        </div>
-                        <div class="field-grid">
-                            <label class="field">
-                                <span>Security</span>
-                                <select id="encryptionSelect" class="input">
-                                    <option value="WPA">WPA/WPA2</option>
-                                    <option value="WEP">WEP</option>
-                                    <option value="nopass">None</option>
-                                </select>
-                            </label>
-                            <label class="field checkbox-field">
-                                <span>Hidden network</span>
-                                <input id="hiddenCheckbox" type="checkbox">
-                            </label>
-                        </div>
-                    </section>
-
-                    <section class="mode-panel" data-section="contact">
-                        <div class="field-grid">
-                            <label class="field">
-                                <span>Full name</span>
-                                <input id="nameInput" class="input" type="text" placeholder="John Doe">
-                                <small class="field-error" id="nameError"></small>
-                            </label>
-                            <label class="field">
-                                <span>Phone number</span>
-                                <input id="phoneInput" class="input" type="tel" placeholder="+11234567890">
-                                <small class="field-error" id="phoneError"></small>
-                            </label>
-                        </div>
-                    </section>
-
-                    <section class="mode-panel" data-section="email">
-                        <div class="field-grid">
-                            <label class="field">
-                                <span>Email address</span>
-                                <input id="emailToInput" class="input" type="email" placeholder="name@example.com">
-                                <small class="field-error" id="emailToError"></small>
-                            </label>
-                            <label class="field">
-                                <span>Subject</span>
-                                <input id="emailSubjectInput" class="input" type="text" placeholder="Subject">
-                            </label>
-                        </div>
-                        <label class="field">
-                            <span>Message</span>
-                            <textarea id="emailBodyInput" class="input" rows="4" placeholder="Optional email body"></textarea>
-                        </label>
-                    </section>
-
-                    <section class="mode-panel" data-section="secure">
-                        <label class="field">
-                            <span>Secret message</span>
-                            <textarea id="secureMessageInput" class="input" rows="5" placeholder="This content will be encrypted before being placed into the QR code"></textarea>
-                            <small class="field-error" id="secureMessageError"></small>
-                        </label>
-                        <div class="field-grid">
-                            <label class="field">
-                                <span>Unlock code</span>
-                                <input id="secureCodeInput" class="input" type="password" placeholder="Enter a code">
-                                <small class="field-error" id="secureCodeError"></small>
-                            </label>
-                            <label class="field">
-                                <span>Hint (optional)</span>
-                                <input id="secureHintInput" class="input" type="text" placeholder="Shown before unlock">
-                            </label>
-                        </div>
-                        <p class="panel-note">Protected QR codes can be uploaded later and unlocked by entering the same code.</p>
-                    </section>
-
-                    <div class="inline-options">
-                        <label class="switch-row" for="showLabelToggle">
-                            <span>Add label under QR</span>
-                            <button id="showLabelToggle" class="switch" type="button" role="switch" aria-checked="false">
-                                <span class="switch-knob"></span>
-                            </button>
-                        </label>
-                        <label class="field custom-label-field hidden" id="customLabelSection">
-                            <span>Custom label</span>
-                            <input id="customLabelInput" class="input" type="text" placeholder="Custom label">
-                        </label>
-                    </div>
-                </form>
-
-                <div id="globalError" class="banner error hidden" role="alert"></div>
-                <div id="globalNotice" class="banner success hidden" aria-live="polite"></div>
-            </section>
-
-            <section class="preview-panel surface">
-                <div class="panel-head">
-                    <div>
-                        <p class="section-kicker">Preview</p>
-                        <h2>Ready to export</h2>
-                    </div>
-                    <span class="preview-meta" id="qrFilename">No QR generated yet</span>
-                </div>
-
-                <div class="preview-stage">
-                    <div id="finalCanvasWrapper" class="qr-frame empty">
-                        <div class="qr-placeholder">
-                            <strong>Waiting for content</strong>
-                            <span>Fill any section to generate a QR code instantly.</span>
-                        </div>
-                    </div>
-                    <div id="qrcode" class="hidden"></div>
-                </div>
-
-                <div class="action-grid">
-                    <button id="downloadBtn" class="primary-btn" type="button">Download</button>
-                    <button id="copyBtn" class="secondary-btn" type="button">Copy Image</button>
-                    <button id="shareBtn" class="secondary-btn" type="button">Share</button>
-                    <button id="saveBtn" class="secondary-btn" type="button">Save In Browser</button>
-                </div>
-
-                <section class="unlock-panel">
-                    <div class="panel-head panel-head-tight">
-                        <div>
-                            <p class="section-kicker">Protected Upload</p>
-                            <h3>Open an encrypted QR</h3>
-                        </div>
-                    </div>
-                    <label class="upload-zone" for="secureQrUpload">
-                        <input id="secureQrUpload" type="file" accept="image/*">
-                        <span>Upload protected QR image</span>
-                        <small>Image is decoded locally in your browser.</small>
-                    </label>
-                    <div id="secureDecodeStatus" class="upload-status"></div>
-                    <div id="decryptedMessageCard" class="message-card hidden">
-                        <span class="message-label">Unlocked message</span>
-                        <pre id="decryptedMessageOutput"></pre>
-                    </div>
-                </section>
-            </section>
-
-            <aside class="saved-panel surface">
-                <div class="panel-head">
-                    <div>
-                        <p class="section-kicker">Saved</p>
-                        <h2>Browser library</h2>
-                    </div>
-                    <button id="clearSavedBtn" class="ghost-btn" type="button">Clear All</button>
-                </div>
-                <p class="panel-note">Saved QR codes stay in this browser for later reference, even while offline.</p>
-                <div id="savedList" class="saved-list"></div>
-            </aside>
-        </main>
-
+                <div id="libraryGrid" class="row g-3"></div>
+            </div>
+        </section>
     </div>
 
-    <dialog id="unlockDialog" class="unlock-dialog">
-        <form id="unlockForm" method="dialog" class="dialog-card">
-            <div class="panel-head panel-head-tight">
-                <div>
-                    <p class="section-kicker">Security Check</p>
-                    <h3>Enter the code</h3>
-                </div>
-                <button class="ghost-btn" id="closeUnlockDialogBtn" type="button">Close</button>
-            </div>
-            <p id="unlockHint" class="panel-note"></p>
-            <label class="field">
-                <span>Unlock code</span>
-                <input id="unlockCodeInput" class="input" type="password" placeholder="Enter the code" autocomplete="off">
-                <small id="unlockError" class="field-error"></small>
-            </label>
-            <div class="dialog-actions">
-                <button id="unlockSubmitBtn" class="primary-btn" type="submit">Unlock Message</button>
-            </div>
-        </form>
-    </dialog>
-
-    <script src="./qrcode.min.js"></script>
-    <script src="./jsQR.js"></script>
-    <script src="./app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="/qrcode.min.js"></script>
+    <script src="/jsQR.js"></script>
+    <script src="/app.js"></script>
 </body>
 </html>
