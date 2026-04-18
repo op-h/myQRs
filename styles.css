@@ -385,7 +385,13 @@ body::after {
 }
 
 .auth-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+}
+
+.auth-tabs .nav-item {
+    min-width: 0;
 }
 
 .auth-tabs .nav-link,
@@ -404,6 +410,17 @@ body::after {
     border: 1px solid transparent;
     color: var(--muted);
     background: rgba(255, 255, 255, 0.03);
+    text-align: center;
+}
+
+.auth-panel .section-head {
+    margin-bottom: 6px;
+}
+
+.auth-panel .section-title {
+    max-width: 11ch;
+    font-size: clamp(1.7rem, 2.2vw, 2.45rem);
+    line-height: 1.02;
 }
 
 .auth-tabs .nav-link.active,
@@ -463,10 +480,15 @@ textarea.form-control {
     gap: 10px;
     padding: 12px 16px;
     border-radius: 14px;
+    padding-left: 16px;
 }
 
 .form-check {
     margin: 0;
+}
+
+.check-block.form-check {
+    padding-left: 16px;
 }
 
 .form-check-input {
@@ -475,6 +497,15 @@ textarea.form-control {
     margin-top: 0;
     background-color: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.18);
+}
+
+.check-block .form-check-input {
+    margin-left: 0;
+    flex: 0 0 auto;
+}
+
+.check-block .form-check-label {
+    line-height: 1.2;
 }
 
 .form-check-input:checked {
@@ -529,7 +560,7 @@ textarea.form-control {
 
 .workspace-grid {
     display: grid;
-    grid-template-columns: 300px minmax(0, 1fr);
+    grid-template-columns: 324px minmax(0, 1fr);
     gap: 18px;
     align-items: start;
 }
@@ -544,7 +575,11 @@ textarea.form-control {
 }
 
 .workspace-brand {
-    font-size: clamp(2.1rem, 4vw, 3.7rem);
+    font-size: clamp(1.95rem, 3.6vw, 3.2rem);
+}
+
+.command-panel .workspace-brand {
+    max-width: 260px;
 }
 
 .identity-block {
@@ -555,8 +590,10 @@ textarea.form-control {
 }
 
 .identity-line {
+    display: grid;
+    grid-template-columns: 1fr;
     align-items: start;
-    gap: 10px;
+    gap: 6px;
 }
 
 .identity-line strong,
@@ -564,17 +601,20 @@ textarea.form-control {
     color: var(--text) !important;
     word-break: break-word;
     overflow-wrap: anywhere;
-    text-align: right;
+    text-align: left;
+    line-height: 1.45;
 }
 
 .quick-stats {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
     margin-top: 18px;
 }
 
 .stat-card {
     padding: 16px 12px;
     text-align: center;
+    min-height: 106px;
 }
 
 .stat-card strong {
@@ -868,7 +908,7 @@ textarea.form-control {
 
 @media (max-width: 1399px) {
     .workspace-grid {
-        grid-template-columns: 280px minmax(0, 1fr);
+        grid-template-columns: 296px minmax(0, 1fr);
     }
 
     .main-panels {
@@ -914,11 +954,6 @@ textarea.form-control {
     .generator-panel .section-actions {
         width: 100%;
         justify-content: space-between;
-    }
-
-    .identity-line strong,
-    .identity-value {
-        text-align: left;
     }
 }
 
